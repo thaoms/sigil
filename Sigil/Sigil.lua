@@ -51,6 +51,27 @@ local function demoTick(now)
   ns.Halo.render(d, demo)
 end
 
+-- Debug log: why the Consecration mark is or isn't showing, on each change.
+local lastCons
+function ns.logConsecration(d)
+  local Game, db = ns.Game, ns.db
+  if not db.debug or not Game.inCombat then lastCons = nil return end
+  local shown = false
+  for _, id in ipairs(d.side or {}) do if id == "consecration" then shown = true end end
+  local why
+  if shown then why = "shown"
+  elseif (db.consecration or "aoe") == "never" then why = "setting is never"
+  elseif not Game.known.consecration then why = "not learned"
+  elseif (d.mana or 3) < 3 then why = "mana not comfortable"
+  elseif Game.ready("consecration") ~= true then why = "on cooldown"
+  elseif Game.afford("consecration") == false then why = "not enough mana"
+  else why = ("enemies counted %s"):format(tostring(Game.enemies())) end
+  if why ~= lastCons then
+    lastCons = why
+    Game.log("consecration mark: %s (enemies %s, mana level %s)", why, tostring(Game.enemies()), tostring(d.mana))
+  end
+end
+
 local elapsed = 0
 local function onUpdate(_, dt)
   elapsed = elapsed + dt
@@ -63,6 +84,7 @@ local function onUpdate(_, dt)
     return Engine.decide(ns.Game.view(), ns.db)
   end)
   if ok then
+    ns.logConsecration(result)
     ns.Halo.render(result)
   elseif result ~= ns.lastError then
     ns.lastError = result
