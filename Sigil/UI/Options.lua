@@ -15,7 +15,7 @@ local ROWS = {
   { "check", "showWhy", "Show the reason line", "A short line under the halo saying why." },
   { "check", "onlyCombat", "Only when fighting", "Hide the halo when you have no target." },
   { "check", "weave", "Swap seals for Unsealed Wrath", "Turn off to stay on one seal." },
-  { "cycle", "attackKeys", "Attack keys", "Use two keys if the macro only fires Judgement." },
+  { "cycle", "attackKeys", "Attack keys", "Pick two if one press only fires Judgement." },
   { "cycle", "consecration", "Consecration", "When Sigil marks it." },
   { "cycle", "recover", "When mana runs low", "How Sigil helps you recover." },
   { "check", "upkeep", "Aura and blessing reminders", "Shown only when one is missing." },
@@ -60,6 +60,9 @@ function Options.create()
     local sub = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     sub:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -2)
     sub:SetText(help)
+    sub:SetJustifyH("LEFT")
+    sub:SetWidth(kind == "check" and 320 or 170)
+    if sub.SetWordWrap then sub:SetWordWrap(false) end
     if kind == "check" then
       local cb = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
       cb:SetSize(24, 24)
