@@ -245,13 +245,13 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         <div class="hud">
           <div class="hud-row">
             <svg class="halo" id="halo" viewBox="0 0 220 220" role="img" aria-label="Next ability"></svg>
-            <div class="queue" aria-label="Coming up">
+            <div class="queue" aria-label="Next seal and side cues">
               <svg class="orb second" id="q1" viewBox="0 0 64 64"></svg>
               <svg class="orb third" id="q2" viewBox="0 0 64 64"></svg>
             </div>
           </div>
           <div class="callout" aria-live="polite">
-            <span class="name"><span id="callName">Seal of Command</span><span class="key" id="callKey">Q</span></span>
+            <span class="name"><span id="callName">Seal of Command</span><span class="key" id="callKey">2</span></span>
             <span class="why" id="callWhy">No seal active.</span>
           </div>
         </div>
@@ -301,11 +301,11 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     </header>
     <div class="two">
       <ul class="plain">
-        <li><div><b>Center glyph</b><span>The next ability to press. Seals sit in a hexagon frame so you can tell them from attacks at a glance. A number on the glyph means it's coming off cooldown.</span></div></li>
+        <li><div><b>Center glyph</b><span>What to press. Most of the time it's the quiet Attack glyph. A seal in a hexagon frame means press that seal key now; a number on it counts down the global cooldown.</span></div></li>
         <li><div><b>Three inner arcs</b><span>Unsealed Wrath stacks. They take the color of the stored seal: red for Command, amber for Righteousness.</span></div></li>
         <li><div><b>Outer ring</b><span>Your swing timer. It fills toward the notch at the top, and your next swing lands at the notch. When it's time to swap seals, the swap has to happen before the ring reaches the notch.</span></div></li>
         <li><div><b>Three marks at the bottom</b><span>Your mana level: three blue marks is comfortable, two amber is getting low, one red is nearly empty.</span></div></li>
-        <li><div><b>Two trailing orbs</b><span>What's coming up next, fading with distance. Useful for planning a seal swap around the global cooldown.</span></div></li>
+        <li><div><b>Two small orbs</b><span>The seal you'll need next, so the swap never surprises you, and a side mark when Consecration is worth pressing.</span></div></li>
       </ul>
       <div class="note" style="align-self:start">All artwork is drawn from scratch in one line style: no game icons, no art borrowed from other addons. In-game, the halo is a single movable frame you can scale between 60% and 160%.</div>
     </div>
@@ -322,8 +322,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   <section aria-labelledby="prio">
     <header class="col">
       <p class="eyebrow">How it picks</p>
-      <h2 id="prio">Priority, top to bottom</h2>
-      <p class="lede">Every moment, Sigil walks down this list and shows the first thing you can press. The order follows the current WoW Forever guides, adjusted for your talents. The guides disagree on whether Holy Strike or Judgement goes first; since Judgement skips the global cooldown, the order between those two barely matters.</p>
+      <h2 id="prio">The halo only changes when you have a decision to make</h2>
+      <p class="lede">All your attacks sit on one key, so there is nothing to decide about them. The halo shows a quiet “keep attacking” state and only changes, pulses or chimes when a seal key is needed. Side marks cover the two buttons you press by choice.</p>
     </header>
     <ol class="prio" id="prioList"></ol>
   </section>
@@ -356,7 +356,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     </header>
     <ul class="plain col">
       <li><div><b>Retribution Aura and your blessing</b><span>A small mark appears when your aura is off or your blessing has run out. Sigil remembers whether you last cast Blessing of Might or Blessing of Wisdom and reminds you of that one.</span></div></li>
-      <li><div><b>Hammer of Justice</b><span>Judging Seal of Command on a stunned target deals double damage. When Hammer of Justice and Judgement are both ready and Command is up, a mark shows the combo: stun, then Judgement. It's a suggestion on the side, never in the main queue, since you may be saving the stun.</span></div></li>
+      <li><div><b>Hammer of Justice</b><span>Judging Seal of Command on a stunned target deals double damage. Because the Attack key fires Judgement the moment it's ready, Sigil marks the stun about 3 seconds before Judgement comes back. Stun then, keep attacking, and the Judgement lands on a stunned target. It's a side mark, never the main call, since you may be saving the stun.</span></div></li>
     </ul>
   </section>
 
@@ -429,6 +429,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       <div class="srow"><span>Lock position<small>Unlock to drag the halo anywhere.</small></span><input class="toggle" type="checkbox" id="s-lock" checked aria-label="Lock position"></div>
       <div class="srow"><span>Show the reason line<small>“3 Command stacks stored: swap now”.</small></span><input class="toggle" type="checkbox" id="s-why" checked aria-label="Show the reason line"></div>
       <div class="srow"><span>Only in combat<small>Hide the halo when you're not fighting.</small></span><input class="toggle" type="checkbox" id="s-combat" aria-label="Only in combat"></div>
+      <div class="srow"><span>Attack keys<small>One macro key, or two keys if the macro doesn't work on your client.</small></span><select id="s-atk" aria-label="Attack keys"><option>One key</option><option>Two keys</option></select></div>
       <div class="srow"><span>Consecration<small>When Sigil should call it.</small></span><select id="s-cons" aria-label="Consecration"><option>3 or more enemies</option><option>Always</option><option>Never</option></select></div>
       <div class="srow"><span>When mana runs low<small>How Sigil helps you recover.</small></span><select id="s-mana" aria-label="When mana runs low"><option>Seal of Wisdom</option><option>Blessing of Wisdom reminder</option><option>Both</option></select></div>
       <div class="srow"><span>Aura and blessing reminders<small>Shown only when one is missing.</small></span><input class="toggle" type="checkbox" id="s-upkeep" checked aria-label="Aura and blessing reminders"></div>
@@ -443,7 +444,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     <header class="col">
       <p class="eyebrow">Action bar</p>
       <h2 id="bar">How to lay out your bar</h2>
-      <p class="lede">Three keys run the whole rotation: one Attack key you spam, and one key for each seal. The halo tells you when to press a seal key. The keys here are a suggestion; Sigil shows whichever key you actually bound.</p>
+      <p class="lede">Three keys run the whole rotation: one Attack key you spam, and one key for each seal. They sit on keys 1 to 6 of the standard action bar, so there is nothing to rebind. Sigil shows whichever key each button is really on, so you can move them.</p>
     </header>
     <div class="bars">
       <div class="bar-group"><span class="lbl">The three keys</span><div class="bar" id="barMain"></div></div>
@@ -457,7 +458,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     <header class="col">
       <p class="eyebrow">Macro</p>
       <h2 id="macros">The Attack macro</h2>
-      <p class="lede">One macro replaces four buttons. Each press tries your attacks from top to bottom and casts the first one that's ready. Make it under Escape → Macros, then drag it onto key 1.</p>
+      <p class="lede">One macro replaces four buttons. Each press tries your attacks from top to bottom and casts the first one that's ready. Sigil creates this macro for you and keeps it up to date as you learn spells, so you never type it.</p>
     </header>
     <div class="macros">
       <div class="macro">
@@ -478,35 +479,39 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     </div>
   </section>
 
-  <div class="two">
-    <section aria-labelledby="install">
-      <header><p class="eyebrow">Install</p><h2 id="install">Getting it into the game</h2></header>
-      <ol class="steps">
-        <li>Download the <code>Sigil</code> folder I'll build.</li>
-        <li>In CurseForge, open WoW Forever and use the folder button to open your AddOns folder (it sits under <code>_forever_</code>).</li>
-        <li>Drop <code>Sigil</code> in there next to your other addons, then restart the game or type <code>/reload</code>.</li>
-      </ol>
-      <p class="note">CurseForge will show Sigil but won't update it, since it isn't published there. If you like it, I can publish it so updates arrive through the app.</p>
-    </section>
+  <section aria-labelledby="install">
+    <header class="col">
+      <p class="eyebrow">Setup</p>
+      <h2 id="install">Two minutes, all inside the game</h2>
+      <p class="lede">Sigil is installed into your AddOns folder for you. The first time you log in, a setup window walks you through the rest.</p>
+    </header>
+    <ol class="steps col">
+      <li><b>Sigil creates the Attack macro.</b> It uses only the spells your character knows, and updates it when you learn Hammer of Wrath at 44.</li>
+      <li><b>You see a checklist of six buttons.</b> Each line shows the key it's on, or “not on your bar”.</li>
+      <li><b>One button places the missing ones.</b> Sigil shows you exactly which bar slots it will fill before it does anything, and never replaces a button without asking.</li>
+      <li><b>Drag the halo where you want it.</b> Then lock it. Done.</li>
+    </ol>
+    <p class="note col">Two commands help when something looks off: <code>/sigil demo</code> plays the halo outside combat so you can see every state, and <code>/sigil check</code> prints which game readings work on your client, so you can paste me one report.</p>
+  </section>
 
-    <section aria-labelledby="verify">
-      <header><p class="eyebrow">Before I build</p><h2 id="verify">Check these in game</h2></header>
-      <p class="note">Confirmed by you: the Unsealed Wrath tooltip matches this design word for word, the game shows a 1–3 stack of your stored seal, and your weapon is Defender of Dalaran at 3.30 speed. The preview now uses that speed.</p>
-      <ul class="checks">
-        <li><div>Judgement and Holy Strike cooldowns<span>I'm assuming 8 and 10 seconds. Tell me if your tooltips say otherwise.</span></div></li>
-        <li><div>Does a miss add a stack?<span>Watch the stack number after a swing misses or gets dodged. I'm assuming it doesn't go up.</span></div></li>
-      </ul>
-    </section>
-  </div>
+  <section aria-labelledby="verify">
+    <header class="col"><p class="eyebrow">Still unverified</p><h2 id="verify">What only a real fight can confirm</h2></header>
+    <p class="note col">Confirmed by you: the Unsealed Wrath tooltip matches this design word for word, the game shows a 1–3 stack of your stored seal, and your weapon is Defender of Dalaran at 3.30 speed.</p>
+    <ul class="checks col">
+      <li><div>The Attack macro<span>Whether one press moves on to the next spell when the first is on cooldown. If not, switch “Attack keys” to two.</span></div></li>
+      <li><div>Judgement and Holy Strike cooldowns<span>Sigil reads them from the game outside combat, so a wrong assumption corrects itself.</span></div></li>
+      <li><div>Does a miss add a stack?<span>I'm assuming it doesn't. After each fight Sigil compares its count with the real buff and tells you if it drifted.</span></div></li>
+    </ul>
+  </section>
 
   <section aria-labelledby="plan">
     <header class="col"><p class="eyebrow">Build plan</p><h2 id="plan">What gets built, in order</h2></header>
     <ol class="steps col">
-      <li><b>The halo on screen.</b> Movable, scalable frame with the glyph artwork, loading cleanly in WoW Forever.</li>
-      <li><b>Following the fight.</b> Active seal and Unsealed Wrath stacks counted from your casts and landed swings, cooldown timers, target type, and the swing timer.</li>
-      <li><b>The priority engine.</b> The list above, plus the two-ability queue and the reason line.</li>
-      <li><b>Options panel.</b> <code>/sigil</code>, saved per character.</li>
-      <li><b>The Attack macro and a short readme.</b> Then you play a few dungeons and tell me what feels off.</li>
+      <li><b>The decision engine.</b> Written and tested outside the game: the weave, misses, expiry and the three mana levels.</li>
+      <li><b>Following the fight.</b> Seal, stacks, cooldowns and swing timer counted from your casts and swings.</li>
+      <li><b>The halo.</b> Movable, scalable, with the drawn glyphs.</li>
+      <li><b>Setup window and options.</b> The checklist, the Attack macro, <code>/sigil</code>.</li>
+      <li><b>You play a few fights</b> and tell me what feels off.</li>
     </ol>
   </section>
 
@@ -521,6 +526,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     SotC: 'M24 12 V36 M15 21 H33',
     SoW: 'M24 12 C19.5 19 17 23 17 27.5 A7 7 0 0 0 31 27.5 C31 23 28.5 19 24 12 Z',
     J: 'M24 7 V40 M15 40 H33 M10 13 H38 M10 13 L5.5 25 H14.5 Z M38 13 L33.5 25 H42.5 Z M24 7 L22 10 H26 Z',
+    ATK: 'M9 39 L31 17 M27 13 L35 21 M12 32 L16 36 M37 6 V11 M42 11 H37 M41 6 L37.5 9.5',
     HS: 'M9 39 L31 17 M27 13 L35 21 M12 32 L16 36 M37 6 V11 M42 11 H37 M41 6 L37.5 9.5',
     Exo: 'M16 24 A8 8 0 1 0 32 24 A8 8 0 1 0 16 24 M24 4 V9 M24 39 V44 M4 24 H9 M39 24 H44 M10 10 L13.5 13.5 M34.5 34.5 L38 38 M38 10 L34.5 13.5 M13.5 34.5 L10 38',
     Cons: 'M5 35 A19 6 0 1 0 43 35 A19 6 0 1 0 5 35 M14 35 A10 3 0 1 0 34 35 A10 3 0 1 0 14 35 M24 9 V27 M16.5 15 V25 M31.5 15 V25',
@@ -533,16 +539,17 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   const SEALS = new Set(['SoC', 'SoR', 'SotC', 'SoW']);
   const COST = { SoC: 8, SoR: 8, SoW: 3, HS: 5, J: 3, Exo: 6, Cons: 12, HoW: 5 };
   const AB = {
-    SoC: { name: 'Seal of Command', color: 'var(--g-cmd)', key: 'Q' },
-    SoR: { name: 'Seal of Righteousness', color: 'var(--g-right)', key: 'E' },
-    SoW: { name: 'Seal of Wisdom', color: 'var(--g-judge)', key: 'R' },
-    SotC: { name: 'Seal of the Crusader', color: 'var(--g-crus)', key: 'E' },
+    ATK: { name: 'Attack', color: 'var(--scene-gold)', key: '1' },
+    SoC: { name: 'Seal of Command', color: 'var(--g-cmd)', key: '2' },
+    SoR: { name: 'Seal of Righteousness', color: 'var(--g-right)', key: '3' },
+    SoW: { name: 'Seal of Wisdom', color: 'var(--g-judge)', key: '6' },
+    SotC: { name: 'Seal of the Crusader', color: 'var(--g-crus)', key: '3' },
     J: { name: 'Judgement', color: 'var(--g-judge)', key: '1', cd: 8 },
     HS: { name: 'Holy Strike', color: 'var(--g-holy)', key: '1', cd: 10 },
     Exo: { name: 'Exorcism', color: 'var(--g-exo)', key: '1', cd: 15 },
-    Cons: { name: 'Consecration', color: 'var(--g-holy)', key: '2', cd: 8 },
+    Cons: { name: 'Consecration', color: 'var(--g-holy)', key: '4', cd: 8 },
     HoW: { name: 'Hammer of Wrath', color: 'var(--g-judge)', key: '1', cd: 6 },
-    HoJ: { name: 'Hammer of Justice', color: 'var(--g-judge)', key: '3' },
+    HoJ: { name: 'Hammer of Justice', color: 'var(--g-judge)', key: '5' },
     Aura: { name: 'Retribution Aura', color: 'var(--g-cmd)', key: '' },
     BoM: { name: 'Blessing of Might', color: 'var(--g-right)', key: '' },
     BoW: { name: 'Blessing of Wisdom', color: 'var(--g-judge)', key: '' }
@@ -714,18 +721,29 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   const $ = id => document.getElementById(id);
   function render() {
     const q = queue();
-    const top = q[0];
-    const isSwap = top && (top.key === 'SoR' || (top.key === 'SoC' && s.stored === 'SoR'));
+    const first = q[0];
+    let top = first && SEALS.has(first.key) ? first : null;
+    if (!top) {
+      let why = 'Keep attacking.';
+      if (s.seal === 'SoR' && s.stored === 'SoC' && s.stacks > 0) why = 'Your next swing releases the stacks.';
+      else if (s.seal === 'SoC' && s.mode === 3) why = `Building stacks: ${s.stored === 'SoC' ? s.stacks : 0} of 3.`;
+      else if (s.seal === 'SoW') why = 'Recovering mana.';
+      else if (s.mode === 2) why = 'Mana is low. Staying on Command.';
+      top = { key: 'ATK', why };
+    }
+    const isSwap = top.key === 'SoR' || (top.key === 'SoC' && s.stored === 'SoR');
     $('halo').innerHTML = haloSVG({
-      top: top && top.key, readyIn: top ? rdy(top.key) : 0,
+      top: top.key, readyIn: top.key === 'ATK' ? 0 : s.gcd,
       stacks: s.stacks, stored: s.stored, swingPct: 1 - s.swing / cfg.speed,
       mana: s.mode, pulse: !!isSwap, burst: s.t < burstUntil,
       pulseT: calm ? 0.3 : (performance.now() % 1100) / 1100,
       burstT: calm ? 0.4 : Math.min(1, Math.max(0, 1 - (burstUntil - s.t) / 0.6)), burstColor
     });
-    $('q1').innerHTML = orbSVG(q[1] && q[1].key);
-    $('q2').innerHTML = orbSVG(q[2] && q[2].key);
-    if (top) { $('callName').textContent = AB[top.key].name; $('callKey').textContent = AB[top.key].key; $('callWhy').textContent = top.why; }
+    const consUp = s.mode === 3 && cdOf('Cons') <= 0 && s.mana >= COST.Cons && (cfg.cons === 'always' || (cfg.cons === 'aoe' && cfg.enemies >= 3));
+    const nextSeal = s.mode === 3 ? (top.key === 'ATK' && s.seal === 'SoC' && s.stored === 'SoC' && s.stacks === 2 ? 'SoR' : (top.key === 'SoR' || (top.key === 'ATK' && s.seal === 'SoR') ? 'SoC' : null)) : null;
+    $('q1').innerHTML = orbSVG(nextSeal);
+    $('q2').innerHTML = orbSVG(consUp ? 'Cons' : null);
+    { $('callName').textContent = AB[top.key].name; $('callKey').textContent = AB[top.key].key; $('callWhy').textContent = top.why; }
     $('hp').style.width = s.hp + '%';
     $('hpText').textContent = Math.ceil(s.hp) + '%' + (s.hp < 20 ? ' · execute range' : '');
     $('hpbar').classList.toggle('exec', s.hp < 20);
@@ -759,9 +777,9 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
   /* ---------- static states ---------- */
   const states = [
-    { t: 'Building', p: 'Two Command stacks. Holy Strike is up.', o: { top: 'HS', stacks: 2, stored: 'SoC', swingPct: 0.4 } },
-    { t: 'Swap now', p: 'Three stacks stored. The halo pulses until you swap.', o: { top: 'SoR', stacks: 3, stored: 'SoC', swingPct: 0.62, pulse: true } },
-    { t: 'Waiting', p: 'Nothing ready. The number counts down Judgement.', o: { top: 'J', readyIn: 1.4, stacks: 1, stored: 'SoC', swingPct: 0.2, mana: 2 } },
+    { t: 'Keep attacking', p: 'The quiet state. Two stacks stored, nothing to decide.', o: { top: 'ATK', stacks: 2, stored: 'SoC', swingPct: 0.4 } },
+    { t: 'Swap now', p: 'Three stacks stored. The halo pulses and chimes until you swap.', o: { top: 'SoR', stacks: 3, stored: 'SoC', swingPct: 0.62, pulse: true } },
+    { t: 'Release', p: 'Righteousness is up. The next swing cashes in the stacks.', o: { top: 'ATK', stacks: 3, stored: 'SoC', swingPct: 0.85, mana: 3 } },
     { t: 'Nearly empty', p: 'One red mana mark left. Sigil calls Seal of Wisdom.', o: { top: 'SoW', stacks: 2, stored: 'SoC', swingPct: 0.8, mana: 1 } }
   ];
   $('statesGrid').innerHTML = states.map(x =>
@@ -769,15 +787,13 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
   /* ---------- priority list ---------- */
   const prio = [
-    ['SoC', 'Keep a seal up', 'Seal of Command whenever no seal is active.'],
-    ['SoR', 'Swap at 3 Command stacks', 'Seal of Righteousness before the next swing lands.'],
-    ['SoC', 'Swap back after the release', 'Seal of Command as soon as the Command procs have gone off.'],
-    ['HoW', 'Hammer of Wrath below 20%', 'Once you learn it at 44. Sigil shows it the moment the game marks it usable.'],
-    ['HS', 'Holy Strike on cooldown', 'Every 10 seconds. Your hardest-hitting button.'],
-    ['J', 'Judgement on cooldown', 'Every 8 seconds with your talents. It skips the global cooldown, keeps your seal up, and refunds 60% of the seal’s mana (Sanctified Judgement).'],
-    ['Exo', 'Exorcism on Undead and Demons', 'On cooldown, only against those target types.'],
-    ['SoW', 'Seal of Wisdom when nearly empty', 'Replaces the weave until you can afford it again. See the mana section.'],
-    ['Cons', 'Consecration', 'Your choice in settings: on 3 or more enemies, always when nothing better is ready, or never. First thing dropped when mana runs low.']
+    ['SoC', 'Seal of Command when no seal is up', 'At the start of a fight and whenever your seal is about to run out.'],
+    ['SoR', 'Seal of Righteousness at 3 stacks', 'Before your next swing lands. The halo pulses and chimes.'],
+    ['SoC', 'Back to Seal of Command after the release', 'As soon as the stored stacks have gone off.'],
+    ['SoW', 'Seal of Wisdom when nearly empty', 'Replaces the weave until you can afford it again.'],
+    ['ATK', 'Everything else: keep attacking', 'The Attack key handles Judgement, Hammer of Wrath, Holy Strike and Exorcism in that order. The halo stays quiet, with a line saying what you are building toward.'],
+    ['Cons', 'Consecration, as a side mark', 'Appears beside the halo per your setting: 3 or more enemies, always, or never. Dropped when mana runs low.'],
+    ['HoJ', 'Hammer of Justice, as a side mark', 'Appears when your stun is ready and Judgement is about 3 seconds away, so the next Judgement lands on a stunned target.']
   ];
   $('prioList').innerHTML = prio.map((x, i) =>
     `<li><span class="n">${i + 1}</span><svg class="chip" viewBox="0 0 64 64" aria-hidden="true">${orbSVG(x[0])}</svg><div><b>${x[1]}</b><span>${x[2]}</span></div></li>`).join('');
@@ -785,14 +801,14 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   /* ---------- action bar ---------- */
   const slot = (g, key, name, sub, later) => `<div class="slot${later ? ' later' : ''}">${key ? `<span class="key">${key}</span>` : ''}<svg viewBox="0 0 64 64" aria-hidden="true">${orbSVG(g)}</svg><b>${name}</b><small>${sub}</small></div>`;
   $('barMain').innerHTML = [
-    slot('HS', '1', 'Attack', 'Macro: spam this'),
-    slot('SoC', 'Q', 'Seal of Command', 'Your default seal'),
-    slot('SoR', 'E', 'Seal of Righteousness', 'At 3 stacks')
+    slot('ATK', '1', 'Attack', 'Macro: spam this'),
+    slot('SoC', '2', 'Seal of Command', 'Your default seal'),
+    slot('SoR', '3', 'Seal of Righteousness', 'At 3 stacks')
   ].join('');
   $('barSeal').innerHTML = [
-    slot('Cons', '2', 'Consecration', 'Packs of enemies'),
-    slot('HoJ', '3', 'Hammer of Justice', 'Stun, then Attack'),
-    slot('SoW', 'R', 'Seal of Wisdom', 'When mana is nearly empty')
+    slot('Cons', '4', 'Consecration', 'Packs of enemies'),
+    slot('HoJ', '5', 'Hammer of Justice', 'Stun before Judgement'),
+    slot('SoW', '6', 'Seal of Wisdom', 'When mana is nearly empty')
   ].join('');
   $('barSide').innerHTML = [
     slot('Aura', '', 'Retribution Aura', 'Once per login'),
