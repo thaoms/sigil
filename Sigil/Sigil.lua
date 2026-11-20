@@ -138,8 +138,13 @@ boot:SetScript("OnEvent", function(_, event, name)
     ns.onRelease = ns.Halo.release
     ns.Options.register()
     if ns.db.hideErrors then ns.Options.apply("hideErrors") end
-    if ns.db.attackKeys ~= 2 then ns.Game.macroState = ns.Game.ensureMacro() end
-    ns.Game.scanKeys()
+    -- the macro list may not be loaded this early: wait before creating one
+    C_Timer.After(4, function()
+      ns.Game.macrosLoaded = true
+      if ns.db.attackKeys ~= 2 then ns.Game.macroState = ns.Game.ensureMacro() end
+      ns.Game.scanKeys()
+      if ns.refreshSetup then ns.refreshSetup() end
+    end)
     boot:SetScript("OnUpdate", onUpdate)
     ns.ready = true
   end)
@@ -150,7 +155,7 @@ boot:SetScript("OnEvent", function(_, event, name)
   end
   SigilDB.startError = nil
   if not ns.db.setupDone then
-    C_Timer.After(2, function()
+    C_Timer.After(5, function()
       ns.say("Welcome. Type /sigil setup any time to see this window again.")
       ns.Setup.show()
     end)

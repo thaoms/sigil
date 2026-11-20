@@ -75,7 +75,7 @@ function Engine.decide(view, settings)
       return nil
     end
     -- the secondary seal is active
-    if stored == primary and stacks > 0 and level == COMFORTABLE then
+    if stored == primary and stacks > 0 then
       return nil              -- waiting for the swing that releases the stacks
     end
     if level ~= COMFORTABLE then

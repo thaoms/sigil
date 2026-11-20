@@ -222,6 +222,7 @@ world.auras[1311703] = { applications = 2, expirationTime = clock + 9 }
 fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 expect("adopted real stacks", ns.Game.tracker.stacks, 2)
 expect("comparison counted", ns.Game.stats.compared, 1)
+expect("drift noticed", ns.Game.stats.drifted, 1)
 
 -- commands
 SlashCmdList.SIGIL("check")

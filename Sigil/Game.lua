@@ -10,8 +10,9 @@ ns.Game = Game
 
 local issecret = issecretvalue or function() return false end
 
+-- Never compare a value before this check: comparing a secret is an error.
 local function plain(v)
-  if v == nil or issecret(v) then return nil end
+  if issecret(v) then return nil end
   return v
 end
 Game.plain = plain
@@ -143,6 +144,9 @@ function Game.buildProbes()
 end
 
 function Game.manaLevel()
+  local now = GetTime()
+  if Game.lastLevel and Game.manaAt and now - Game.manaAt < 0.3 then return Game.lastLevel end
+  Game.manaAt = now
   local probes = {}
   for i, p in ipairs(Game.probes) do
     local _, short = try(C_Spell.IsSpellUsable, p.id)
@@ -251,6 +255,7 @@ function Game.ensureMacro()
     local ok = pcall(EditMacro, index, nil, nil, body)
     return ok and "ok" or "failed"
   end
+  if not Game.macrosLoaded then return "later" end
   local ok, made = pcall(CreateMacro, Data.MACRO_NAME, "INV_Misc_QuestionMark", body, true)
   if not ok or not made then
     ok, made = pcall(CreateMacro, Data.MACRO_NAME, "INV_Misc_QuestionMark", body, false)
@@ -272,9 +277,12 @@ function Game.pickup(id)
   return false
 end
 
+-- Only "definitely empty" counts: placing onto a full slot would knock the
+-- old button off the bar.
 local function slotEmpty(slot)
   local ok, kind = pcall(GetActionInfo, slot)
-  return ok and kind == nil
+  if not ok or issecret(kind) then return false end
+  return kind == nil
 end
 
 -- Where the missing buttons would go. Only ever empty slots.
@@ -378,9 +386,11 @@ function Game.readBuffs()
   return real
 end
 
-function Game.syncBuffs(compare)
+function Game.syncBuffs()
   local real = Game.readBuffs()
   if not real then return end
+  local compare = Game.compareDue
+  Game.compareDue = nil
   local now = GetTime()
   local t = Game.tracker
   if compare then
@@ -390,6 +400,9 @@ function Game.syncBuffs(compare)
     if t.stacks ~= real.stacks or (real.stacks > 0 and t.stored ~= real.stored) then
       stats.drifted = (stats.drifted or 0) + 1
       Game.log("drift: counted %s x%d, real %s x%d", tostring(t.stored), t.stacks, tostring(real.stored), real.stacks)
+      if stats.drifted == 3 and ns.say then
+        ns.say("My stack count has been off after 3 fights. Type /sigil check then /reload so it can be looked at.")
+      end
     end
     if (t.seal or false) ~= real.seal then
       Game.log("seal drift: counted %s, real %s", tostring(t.seal), tostring(real.seal))
@@ -507,14 +520,16 @@ handlers.UNIT_COMBAT = onUnitCombat
 
 function handlers.PLAYER_REGEN_DISABLED()
   Game.inCombat = true
+  Game.compareDue = nil
   Game.stats.fights = (Game.stats.fights or 0) + 1
 end
 
 function handlers.PLAYER_REGEN_ENABLED()
   Game.inCombat = false
+  Game.compareDue = true
   C_Timer.After(0.6, function()
     if Game.inCombat then return end
-    Game.syncBuffs(true)
+    Game.syncBuffs()
     Game.scanSpells()
     if ns.db and ns.db.attackKeys ~= 2 then Game.ensureMacro() end
     Game.scanKeys()
@@ -550,7 +565,7 @@ for _, e in ipairs({ "SPELLS_CHANGED", "LEARNED_SPELL_IN_SKILL_LINE", "PLAYER_LE
 end
 
 function handlers.UNIT_AURA(unit)
-  if plain(unit) == "player" and not Game.inCombat then Game.syncBuffs(false) end
+  if plain(unit) == "player" and not Game.inCombat then Game.syncBuffs() end
 end
 
 function Game.start()
@@ -585,7 +600,7 @@ function Game.start()
 
   Game.scanSpells()
   Game.scanKeys()
-  Game.syncBuffs(false)
+  Game.syncBuffs()
   Game.unsealedWrathNote()
 end
 
@@ -649,19 +664,26 @@ end
 ---------------------------------------------------------------------------
 
 local function describe(v)
-  if v == nil then return "nil" end
   if issecret(v) then return "SECRET" end
+  if v == nil then return "nil" end
   return tostring(v)
 end
 
 function Game.report()
   local out = {}
   local function add(fmt, ...) out[#out + 1] = fmt:format(...) end
+  local function section(fn)
+    local ok, err = pcall(fn)
+    if not ok then out[#out + 1] = "report error: " .. tostring(err) end
+  end
+  section(function()
   local version, build, _, interface = try(GetBuildInfo)
   add("client %s build %s interface %s", describe(version), describe(build), describe(interface))
   add("class %s level %s combat %s", describe(select(2, try(UnitClass, "player"))), describe(try(UnitLevel, "player")), tostring(Game.inCombat))
   add("issecretvalue %s  C_Secrets %s  C_Timer %s", tostring(issecretvalue ~= nil), tostring(C_Secrets ~= nil), tostring(C_Timer ~= nil))
+  end)
   for _, key in ipairs({ "judgement", "holy_strike", "exorcism", "how", "consecration", "hoj", "command", "righteousness", "wisdom", "ret_aura", "might", "bow" }) do
+    section(function()
     local id = Game.known[key]
     if id then
       local usable, short = try(C_Spell.IsSpellUsable, id)
@@ -672,13 +694,19 @@ function Game.report()
     else
       add("%s not known", key)
     end
+    end)
   end
+  section(function()
   add("unsealed wrath %s (%s)", tostring(Game.unsealedWrath), tostring(Game.unsealedWrathHow))
   local costs = {}
   for _, p in ipairs(Game.probes) do costs[#costs + 1] = p.cost end
   add("mana probes %s", table.concat(costs, " "))
   add("mana level %s floor %s ceiling %s", tostring(Game.lastLevel), tostring(Game.manaFloor), tostring(Game.manaCeiling))
+  end)
+  section(function()
   add("UnitPower %s UnitPowerMax %s", describe(try(UnitPower, "player", 0)), describe(try(UnitPowerMax, "player", 0)))
+  end)
+  section(function()
   local real = Game.readBuffs()
   if real then
     add("buffs readable: seal %s stacks %s x%s blessing %s", tostring(real.seal), tostring(real.stored), tostring(real.stacks), tostring(real.blessing))
@@ -687,6 +715,8 @@ function Game.report()
   end
   local t = Game.tracker
   add("counted: seal %s stacks %s x%d swing speed %s", tostring(t.seal), tostring(t.stored), t.stacks, tostring(t.swingSpeed))
+  end)
+  section(function()
   add("aura form %s enemies %s creature %s", describe(try(GetShapeshiftForm)), tostring(Game.enemies()), describe(select(2, try(UnitCreatureType, "target"))))
   local index = plain(try(GetMacroIndexByName, Data.MACRO_NAME)) or 0
   add("macro index %d key %s", index, tostring(Game.keys.attack))
@@ -695,6 +725,7 @@ function Game.report()
   local s = Game.stats
   add("stats: fights %s swings %s misses %s judgements %s holy strikes %s compared %s drifted %s", tostring(s.fights), tostring(s.swings),
     tostring(s.misses), tostring(s.judgement), tostring(s.holy_strike), tostring(s.compared), tostring(s.drifted))
-  for name, cd in pairs(t.cooldowns) do add("cooldown %s %.1f", name, cd) end
+  for name, cd in pairs(Game.tracker.cooldowns) do add("cooldown %s %.1f", name, cd) end
+  end)
   return out
 end

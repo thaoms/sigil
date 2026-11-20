@@ -128,7 +128,14 @@ function Setup.create()
   f.foot:SetPoint("LEFT", f.options, "RIGHT", 10, 0)
   f.foot:SetPoint("RIGHT", f.close, "LEFT", -10, 0)
   f.foot:SetJustifyH("LEFT")
-  f:SetScript("OnHide", function() ns.db.setupDone = true end)
+  f:SetScript("OnHide", function()
+    ns.db.setupDone = true
+    if not ns.db.locked then
+      ns.db.locked = true
+      ns.Halo.applyLayout()
+      ns.say("Halo locked. Type /sigil unlock to move it again.")
+    end
+  end)
 end
 
 local function missing()
@@ -176,6 +183,8 @@ function Setup.refresh()
   local intro
   if db.attackKeys == 2 then
     intro = "Two attack keys: press Judgement and Holy Strike on cooldown. The halo tells you when to press a seal."
+  elseif Game.macroState == "later" or Game.macroState == nil then
+    intro = "Setting up the Attack macro..."
   elseif Game.macroState == "failed" then
     intro = "Sigil couldn't create the Attack macro. Type /sigil macro to see its text and make it yourself, or switch to two attack keys in Options."
   else
