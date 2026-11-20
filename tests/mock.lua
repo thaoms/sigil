@@ -223,12 +223,19 @@ expect("swing released righteousness and stored command", ns.Game.tracker.stored
 cast(1866, 10)
 fire("UNIT_COMBAT", "target", "DODGE", "", 0, 1); tick(0.1)
 expect("a dodge right after an ability is the ability's", ns.Game.tracker.stored, "command")
-tick(0.5)
+tick(0.3)
 fire("UNIT_COMBAT", "target", "PARRY", "", 0, 1); tick(0.1)
 expect("a later parry undoes the swing", ns.Game.tracker.stored, "righteousness")
 expect("miss counted", ns.Game.stats.misses, 1)
 fire("UNIT_COMBAT", "target", "MISS", "", 0, 1); tick(0.1)
 expect("one swing is only undone once", ns.Game.stats.misses, 1)
+world.inGroup = true
+fire("PLAYER_SWING", 3.3, 0); tick(0.5)
+local missesBefore = ns.Game.stats.misses
+fire("UNIT_COMBAT", "target", "PARRY", "", 0, 1); tick(0.1)
+expect("the same miss rule applies in a group", ns.Game.stats.misses, missesBefore + 1)
+expect("the parried swing is undone", ns.Game.tracker.stored, "righteousness")
+world.inGroup = false
 cast(20915); fire("PLAYER_SWING", 3.3, 0); tick(0.3)
 world.known[99999] = true
 C_Spell.GetSpellName = (function(old) return function(id) if id == 99999 then return "Seal of Righteousness" end return old(id) end end)(C_Spell.GetSpellName)
@@ -308,6 +315,11 @@ local stackFs = widget("FontString"); stackFs.text = SECRET
 echoItem.Applications = setmetatable({ Applications = stackFs }, { __index = function() return nil end })
 tick(0.6)
 expect("the hidden stack count is handed to the halo unread", ns.Halo.frame.real.text, SECRET)
+expect("the arcs step aside for the game's count", ns.Halo.frame.stacks[1].alpha, 0)
+expect("a dot shows that stacks are stored", ns.Halo.frame.realDot.shown, true)
+echoItem.auraInstanceID = nil; tick(0.6)
+expect("no stacks shows 0", ns.Halo.frame.real.text, "0")
+echoItem.auraInstanceID = SECRET; tick(0.6)
 stackFs.text = "3"; tick(0.6)
 expect("the halo shows whatever the game shows", ns.Halo.frame.real.text, "3")
 -- the Cooldown Manager says stacks exist while Sigil counts none
@@ -324,7 +336,8 @@ expect("command proc evidence resets the count", ns.Game.tracker.stacks, 1)
 local fixes = ns.Game.cdm.fixes
 fire("UNIT_SPELLCAST_SUCCEEDED", "player", "guid", 20424); tick(0.1)
 expect("only one correction per swing", ns.Game.cdm.fixes, fixes)
-echoItem.Applications = nil
+echoItem.Applications = nil; tick(0.6)
+expect("without the game's count the arcs come back", ns.Halo.frame.stacks[1].alpha, 1)
 cast(20915); tick(0.2)
 world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 

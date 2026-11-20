@@ -100,7 +100,7 @@ function Engine.decide(view, settings)
     end
     if seal == primary then
       if level == COMFORTABLE and stored == primary and stacks >= 3 then
-        return call(secondary, "3 stacks stored. Swap before your next swing.", true)
+        return call(secondary, "Swap at 3 stacks. Your next swing releases them.", true)
       end
       if expiring then return call(primary, "Your seal is about to run out.", false) end
       return nil
@@ -115,7 +115,7 @@ function Engine.decide(view, settings)
     if settings.pattern == "even" then
       -- build three copies of the second seal too: fewer seal casts
       if stored == secondary and stacks >= 3 then
-        return call(primary, "3 stacks stored. Swap before your next swing.", true)
+        return call(primary, "Swap at 3 stacks. Your next swing releases them.", true)
       end
       if expiring then return call(secondary, "Your seal is about to run out.", false) end
       return nil

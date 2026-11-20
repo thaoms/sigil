@@ -584,11 +584,9 @@ local function onSwing(duration, swingType)
 end
 
 -- The game reports "something was missed, dodged or parried on the target"
--- without saying what. Live fights showed the pattern: an ability's result
--- arrives the instant it is cast, a swing's result up to a second or two
--- after the swing. A missed swing stores no stack (the real buff confirmed
--- it), so a miss that isn't an ability's undoes the last swing's stack.
--- In a group other players' misses look the same, so there every swing counts.
+-- without saying by whom. A missed swing stores no stack (the real buff
+-- confirmed it), so a miss at the moment your swing's result is due undoes
+-- the stack that swing added.
 local function onUnitCombat(unit, action)
   if plain(unit) ~= "target" then return end
   if not MISSES[plain(action) or ""] then return end
@@ -596,13 +594,15 @@ local function onUnitCombat(unit, action)
   local sinceSwing = Game.swingAt and (now - Game.swingAt) or -1
   local sinceAbility = Game.lastAbility and (now - Game.lastAbility) or -1
   local verdict = "ignored"
+  -- One rule, solo and in groups alike. Live, your swing's result arrived
+  -- 0.3 to 1.0 seconds after the swing and an ability's at the moment of the
+  -- cast. In a group another player's miss can land in that window now and
+  -- then; the game's own stack number on the halo shows when that happened.
   if sinceAbility >= 0 and sinceAbility < 0.25 then
     verdict = "ability"
-  elseif plain(try(IsInGroup)) then
-    verdict = "in a group"
   elseif sinceSwing < 0.25 then
-    verdict = "too soon after the swing to be its result"   -- live: swing results took 0.3s or more
-  elseif sinceSwing <= 2.0 and Game.tracker:swingMissed(now) then
+    verdict = "too soon after the swing to be its result"
+  elseif sinceSwing <= 1.1 and Game.tracker:swingMissed(now) then
     verdict = "swing undone, now x" .. Game.tracker.stacks
     Game.stats.misses = (Game.stats.misses or 0) + 1
   end

@@ -36,7 +36,7 @@ local ROWS = {
   { "cycle", "stun", "Hammer of Justice", "Whether the Attack key stuns." },
   { "cycle", "cue", "Swap sound", "Click to hear each one." },
   { "check", "minimap", "Minimap button", "Left-click opens this window." },
-  { "check", "realStacks", "Show the game's stack count", "Needs Unsealed Wrath in the Cooldown Manager." },
+  { "check", "realStacks", "Use the game's stack count", "Needs Unsealed Wrath in the Cooldown Manager." },
   { "check", "debug", "Debug log", "Records every fight in detail. Saved on /reload." },
   { "check", "hideErrors", "Hide red error text", "Hides ALL red error messages, e.g. \"not ready yet\"." },
 }

@@ -56,11 +56,10 @@ Suggested bar, as in the screenshot: 1 the Attack macro, 2 Seal of the Crusader 
 
 The game hides buffs, mana, damage and cooldown times from addons during combat. Sigil works from what is left:
 
-- **Seal and stacks** are counted from your own casts and swings. A missed swing stores no stack; Sigil tells swing misses from ability misses by timing.
-- **After every fight** the count is compared with the real buffs and corrected.
-- **Mid-fight**, the game's Cooldown Manager (if enabled, with Unsealed Wrath and Seals tracked) tells Sigil when the stack buff or seal is gone, or when stacks exist that Sigil didn't count. Seal of Command's extra hits also reveal stored Command copies Sigil missed.
-- **Who missed** can't be seen: addons get no combat log on this client, and the Combat Log tab passes no fight lines to them (tested live). Solo every miss on your target is yours, so Sigil handles misses by timing; in a group it counts every swing.
-- **The real stack number** is hidden from addons in combat, both on the buff icons and on the Cooldown Manager (tested live). Sigil can't use it, but it shows it as a small "game" number on the halo by passing the hidden value straight to its own text.
+- **The stack display is the game's own number**, copied from the Cooldown Manager's Unsealed Wrath button. Sigil can't read it (the game hides it from addons in combat), but it can show it, so what you see is always right. A dot means stacks are stored; the game prints no number for a single stack. Without the Cooldown Manager, Sigil falls back to three arcs showing its own estimate.
+- **The swap call runs on Sigil's own count.** Every swing adds a stack, unless a miss on your target arrives when your swing's result is due (0.25 to 1.1 seconds after it). The same rule applies solo and in groups; in a group another player's miss can occasionally land in that window, and the real number shows when that happened.
+- **Only signals the game confirms correct the count:** the Cooldown Manager showing the stack buff gone or present, Seal of Command extra hits that reveal a release, and the real buff after every fight.
+- **Who missed** can't be seen: addons get no combat log on this client, and the Combat Log tab passes no fight lines to them (tested live).
 - **Mana level** comes from which spells the game says you can afford. The bar shows the true value, drawn by the game; Sigil cannot read it.
 
 Code layout:
