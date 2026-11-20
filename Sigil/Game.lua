@@ -599,7 +599,10 @@ function Game.compareLines()
     local function part(label, x)
       return x and ("%s %.1fs over %d fight%s"):format(label, x.seconds / x.fights, x.fights, x.fights == 1 and "" or "s") or nil
     end
-    local line = mob .. ": " .. table.concat({ part("3 and 1", a), part("3 and 3", b) }, ", ")
+    local parts = {}
+    if a then parts[#parts + 1] = part("3 and 1", a) end
+    if b then parts[#parts + 1] = part("3 and 3", b) end
+    local line = mob .. ": " .. table.concat(parts, ", ")
     if a and b then both[#both + 1] = line else single[#single + 1] = line end
   end
   table.sort(both); table.sort(single)

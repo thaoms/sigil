@@ -248,6 +248,11 @@ fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 expect("adopted real stacks", ns.Game.tracker.stacks, 2)
 expect("comparison counted", ns.Game.stats.compared, 1)
 expect("kill time tallied for the mob and pattern", ns.db.kills["Plains Boar (40)"].burst.fights, 1)
+ns.db.kills["Only Even (40)"] = { even = { fights = 1, seconds = 12, seals = 1 } }
+ns.db.kills["Both (40)"] = { even = { fights = 2, seconds = 30, seals = 2 }, burst = { fights = 1, seconds = 14, seals = 2 } }
+local both, single = ns.Game.compareLines()
+expect("mob fought with both patterns", both[1], "Both (40): 3 and 1 14.0s over 1 fight, 3 and 3 15.0s over 2 fights")
+expect("mob fought with one pattern", single[1], "Only Even (40): 3 and 3 12.0s over 1 fight")
 SlashCmdList.SIGIL("compare")
 
 -- aura reminders

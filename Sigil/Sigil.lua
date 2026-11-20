@@ -122,7 +122,14 @@ local function command(msg)
 end
 
 SLASH_SIGIL1 = "/sigil"
-SlashCmdList.SIGIL = command
+SlashCmdList.SIGIL = function(msg)
+  -- a command must never fail silently
+  local ok, err = pcall(command, msg)
+  if not ok then
+    ns.say("That command hit an error: " .. tostring(err))
+    if ns.Game and ns.Game.log then ns.Game.log("command error (%s): %s", tostring(msg), tostring(err)) end
+  end
+end
 
 local boot = CreateFrame("Frame")
 boot:RegisterEvent("ADDON_LOADED")
