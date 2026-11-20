@@ -1,8 +1,8 @@
 ## Interface: 16001
 ## Title: Sigil
 ## Notes: Shows a Retribution Paladin which seal to press and when. It never presses anything for you.
-## Author: Thomas
-## Version: 0.2.0-beta
+## Author: Narsil
+## Version: 0.2.0-beta2
 ## Category: Combat
 ## X-License: All Rights Reserved
 ## IconTexture: Interface\AddOns\Sigil\Media\glyph_command

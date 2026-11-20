@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0-beta
+## 0.2.0-beta2
 
 First public beta. For Retribution Paladins on WoW Forever 1.60.1.
 
