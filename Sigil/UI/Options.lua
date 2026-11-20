@@ -28,7 +28,7 @@ local ROWS = {
   { "cycle", "pattern", "Seal pattern", "3 and 3 costs less mana." },
   { "cycle", "opener", "Crusader opener", "Judge Seal of the Crusader first." },
   { "cycle", "attackKeys", "Attack keys", "Use two if the macro misfires." },
-  { "cycle", "consecration", "Consecration", "Big pulls keep it until mana is nearly empty." },
+  { "cycle", "consecration", "Consecration", "Kept longer on big pulls." },
   { "cycle", "recover", "When mana runs low", "How Sigil helps you recover." },
   { "check", "upkeep", "Aura and blessing reminders", "Shown only when one is missing." },
   { "cycle", "aura", "Aura to keep up", "Warns if it's off or wrong." },
