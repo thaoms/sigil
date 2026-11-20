@@ -1,0 +1,767 @@
+<title>Sigil</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single reading column; the live preview breaks out into a two-pane "game scene + controls" band. The scene is always dark because it sits over the game world. */
+:root {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --surface-2: #e5e9ef;
+  --fg: #151a24;
+  --muted: #586274;
+  --line: #d4dae3;
+  --accent: #8f620a;
+  --accent-soft: #f2e6c9;
+
+  --scene-1: #070b12;
+  --scene-2: #122030;
+  --scene-ink: #ece6d6;
+  --scene-dim: #8d95a4;
+  --scene-line: rgba(236, 230, 214, 0.13);
+  --scene-gold: #e7ba57;
+  --g-cmd: #ff6a5a;
+  --g-right: #ffb347;
+  --g-crus: #f1d77a;
+  --g-judge: #86b4ff;
+  --g-holy: #ffd76e;
+  --g-exo: #c7a0ff;
+
+  --display: "Marcellus SC", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1218; --surface: #161b24; --surface-2: #1d232e; --fg: #e7eaf0; --muted: #9aa3b2;
+    --line: #29303c; --accent: #e5b552; --accent-soft: #2a2312; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1218; --surface: #161b24; --surface-2: #1d232e; --fg: #e7eaf0; --muted: #9aa3b2;
+  --line: #29303c; --accent: #e5b552; --accent-soft: #2a2312; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 72px; }
+.col { max-width: 720px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; letter-spacing: 0.01em; }
+h2 { font-size: 1.75rem; line-height: 1.2; }
+h3 { font-size: 1.15rem; }
+p { margin: 0; }
+.eyebrow { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.lede { font-size: 1.1rem; color: var(--muted); max-width: 62ch; }
+section { display: grid; gap: 20px; }
+section > header { display: grid; gap: 8px; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* hero */
+.hero { padding-top: 56px; display: grid; gap: 18px; }
+.hero h1 { font-size: clamp(3rem, 9vw, 5.5rem); line-height: 1; }
+.hero .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { font-size: 0.78rem; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.tag.draft { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* live preview */
+.preview { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+@media (max-width: 860px) { .preview { grid-template-columns: minmax(0, 1fr); } }
+.scene {
+  position: relative; min-height: 460px; color: var(--scene-ink);
+  background:
+    radial-gradient(120% 70% at 50% 108%, rgba(56, 92, 74, 0.55), transparent 60%),
+    radial-gradient(60% 50% at 80% 10%, rgba(231, 186, 87, 0.10), transparent 70%),
+    linear-gradient(180deg, var(--scene-2), var(--scene-1));
+  display: grid; grid-template-rows: auto 1fr auto; padding: 18px;
+}
+.scene-top { display: flex; justify-content: space-between; gap: 12px; font-size: 0.78rem; color: var(--scene-dim); }
+.target { display: grid; gap: 4px; min-width: 150px; }
+.target b { color: var(--scene-ink); font-weight: 600; font-size: 0.85rem; }
+.hpbar { height: 6px; border-radius: 3px; background: var(--scene-line); overflow: hidden; }
+.hpbar i { display: block; height: 100%; background: linear-gradient(90deg, #c6453a, #e58a4a); width: 100%; transition: width 0.1s linear; }
+.hpbar.exec i { background: linear-gradient(90deg, var(--scene-gold), #fff1c4); }
+.seal-now { text-align: right; }
+.seal-now b { display: block; color: var(--scene-ink); font-weight: 600; font-size: 0.85rem; }
+
+.hud { display: grid; place-items: center; align-content: center; gap: 10px; }
+.hud-row { display: flex; align-items: center; gap: 14px; }
+.halo { width: 210px; height: 210px; }
+.queue { display: grid; gap: 10px; }
+.orb { width: 54px; height: 54px; }
+.orb.second { opacity: 0.8; }
+.orb.third { opacity: 0.5; width: 44px; height: 44px; }
+.callout { text-align: center; display: grid; gap: 2px; min-height: 62px; }
+.callout .name { font-family: var(--display); font-size: 1.35rem; letter-spacing: 0.02em; display: inline-flex; align-items: center; gap: 10px; justify-content: center; }
+.key { font-family: var(--mono); font-size: 0.72rem; border: 1px solid var(--scene-line); border-bottom-width: 2px; padding: 1px 7px; border-radius: 5px; color: var(--scene-ink); }
+.callout .why { font-size: 0.82rem; color: var(--scene-dim); max-width: 34ch; margin: 0 auto; }
+
+.log { font-family: var(--mono); font-size: 0.72rem; color: var(--scene-dim); display: grid; gap: 2px; height: 7.6em; overflow: hidden; mask-image: linear-gradient(180deg, #000 55%, transparent); -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent); }
+.log div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log div:first-child { color: var(--scene-ink); }
+.log .t { color: var(--scene-gold); opacity: 0.7; margin-right: 8px; }
+
+.controls { padding: 22px; display: grid; gap: 18px; align-content: start; border-left: 1px solid var(--line); }
+@media (max-width: 860px) { .controls { border-left: 0; border-top: 1px solid var(--line); } }
+.ctl { display: grid; gap: 6px; }
+.ctl > label, .ctl > .lbl { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.seg { display: flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; background: var(--surface-2); }
+.seg button { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--muted); font: 500 0.85rem var(--body); padding: 6px 8px; border-radius: 7px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.transport { display: flex; gap: 8px; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 600 0.88rem var(--body); padding: 9px 14px; border-radius: 10px; cursor: pointer; }
+.btn.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); flex: 1; }
+.btn:hover { border-color: var(--muted); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; cursor: pointer; }
+.check input { margin-top: 4px; accent-color: var(--accent); }
+.check small { display: block; color: var(--muted); font-size: 0.8rem; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.range-row { display: flex; justify-content: space-between; font-size: 0.85rem; }
+.range-row span:last-child { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* states */
+.states { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .states { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.state { background: linear-gradient(180deg, var(--scene-2), var(--scene-1)); color: var(--scene-ink); border-radius: 14px; padding: 16px 12px; display: grid; justify-items: center; gap: 8px; text-align: center; }
+.state svg { width: 120px; height: 120px; }
+.state b { font-family: var(--display); font-weight: 400; font-size: 1rem; }
+.state p { font-size: 0.78rem; color: var(--scene-dim); }
+
+/* priority */
+.prio { list-style: none; margin: 0; padding: 0; display: grid; border-top: 1px solid var(--line); }
+.prio li { display: grid; grid-template-columns: 28px 44px minmax(0, 1fr); gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.prio .n { font-family: var(--display); color: var(--muted); font-size: 1.05rem; text-align: right; font-variant-numeric: tabular-nums; }
+.prio .chip { width: 44px; height: 44px; }
+.prio b { font-weight: 600; }
+.prio span { color: var(--muted); font-size: 0.9rem; display: block; }
+
+/* cycle */
+.cycle-scroll { overflow-x: auto; padding-bottom: 6px; }
+.cycle { display: flex; gap: 8px; align-items: stretch; min-width: 760px; }
+.swing { flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px; display: grid; gap: 8px; align-content: start; }
+.swing .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.swing .pips { display: flex; gap: 4px; }
+.pip { width: 18px; height: 6px; border-radius: 3px; background: var(--surface-2); }
+.pip.cmd { background: #d8483a; } .pip.right { background: #e7922a; }
+.swing p { font-size: 0.84rem; }
+.swing.release { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.swap { flex: 0 0 auto; display: grid; place-items: center; writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); font-weight: 600; padding: 6px 4px; border-left: 2px dashed var(--accent); }
+
+/* settings mock */
+.settings { background: linear-gradient(180deg, var(--scene-2), var(--scene-1)); color: var(--scene-ink); border-radius: 16px; padding: 22px; display: grid; gap: 18px; max-width: 560px; }
+.settings h3 { color: var(--scene-gold); }
+.srow { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding-bottom: 14px; border-bottom: 1px solid var(--scene-line); }
+.srow:last-child { border-bottom: 0; padding-bottom: 0; }
+.srow small { display: block; color: var(--scene-dim); font-size: 0.8rem; }
+.toggle { appearance: none; -webkit-appearance: none; width: 40px; height: 22px; border-radius: 11px; background: var(--scene-line); position: relative; cursor: pointer; flex: 0 0 auto; transition: background .15s; }
+.toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--scene-ink); transition: transform .15s; }
+.toggle:checked { background: var(--scene-gold); }
+.toggle:checked::after { transform: translateX(18px); background: var(--scene-1); }
+.settings select { background: var(--scene-1); color: var(--scene-ink); border: 1px solid var(--scene-line); border-radius: 8px; padding: 6px 8px; font: 500 0.85rem var(--body); }
+
+/* action bar */
+.bars { background: linear-gradient(180deg, var(--scene-2), var(--scene-1)); color: var(--scene-ink); border-radius: 16px; padding: 22px; display: grid; gap: 22px; }
+.bar-group { display: grid; gap: 10px; }
+.bar-group > .lbl { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--scene-dim); font-weight: 600; }
+.bar { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.slot { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 12px 6px 10px; border: 1px solid var(--scene-line); border-radius: 12px; position: relative; min-width: 0; }
+.slot svg { width: 52px; height: 52px; }
+.slot .key { position: absolute; top: 6px; left: 6px; background: var(--scene-1); }
+.slot b { font-size: 0.8rem; font-weight: 600; line-height: 1.25; }
+.slot small { font-size: 0.72rem; color: var(--scene-dim); line-height: 1.3; }
+.slot.later { border-style: dashed; }
+
+/* macros */
+.macros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .macros { grid-template-columns: minmax(0, 1fr); } }
+.macro { border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.macro-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.macro pre { margin: 0; background: var(--surface-2); border-radius: 8px; padding: 12px; overflow-x: auto; font-family: var(--mono); font-size: 0.8rem; line-height: 1.55; }
+.macro p { font-size: 0.86rem; color: var(--muted); }
+.copy { font: 600 0.75rem var(--body); border: 1px solid var(--line); background: transparent; color: var(--fg); padding: 4px 10px; border-radius: 7px; cursor: pointer; }
+
+/* lists */
+.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 10px; }
+.steps li::marker { color: var(--accent); font-weight: 600; }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.checks li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; }
+.checks li::before { content: ""; width: 14px; height: 14px; border: 1.5px solid var(--accent); border-radius: 4px; margin-top: 5px; }
+.checks span { color: var(--muted); display: block; font-size: 0.9rem; }
+ .plain { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.plain span { color: var(--muted); display: block; font-size: 0.9rem; }
+.note { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; color: var(--muted); font-size: 0.92rem; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; }
+@media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); gap: 56px; } }
+
+/* svg animation */
+.pulse { transform-box: fill-box; transform-origin: center; animation: pulse 1.1s ease-out infinite; }
+@keyframes pulse { 0% { opacity: .85; transform: scale(1); } 100% { opacity: 0; transform: scale(1.22); } }
+.burst { transform-box: fill-box; transform-origin: center; animation: burst .6s ease-out forwards; }
+@keyframes burst { 0% { opacity: .9; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) { .pulse, .burst { animation: none; opacity: .6; } .hpbar i { transition: none; } }
+</style>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">Retribution helper · World of Warcraft: Forever</p>
+    <h1>Sigil</h1>
+    <p class="lede">One glance tells you what to press next. Sigil follows your seal, your Unsealed Wrath stacks, your swing timer and your cooldowns, then shows the next ability in a halo next to your character. You still press every button yourself.</p>
+    <div class="tags">
+      <span class="tag draft">Design draft</span>
+      <span class="tag">Level 40 · 31 points Retribution</span>
+      <span class="tag">Command ↔ Righteousness weave</span>
+      <span class="tag">Original artwork</span>
+    </div>
+  </header>
+
+  <section aria-labelledby="live">
+    <header class="col">
+      <p class="eyebrow">Live preview</p>
+      <h2 id="live">Watch it call a fight</h2>
+      <p class="lede">This preview follows its own advice so you can watch the cycle. Change the target, the pull size or your weapon speed and the calls change with them.</p>
+    </header>
+
+    <div class="preview">
+      <div class="scene" aria-label="In-game preview">
+        <div class="scene-top">
+          <div class="target">
+            <span id="tgtName">Target · Beast</span>
+            <div class="hpbar" id="hpbar"><i id="hp"></i></div>
+            <span id="hpText">100%</span>
+          </div>
+          <div class="seal-now">
+            Active seal
+            <b id="sealNow">None</b>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="hud-row">
+            <svg class="halo" id="halo" viewBox="0 0 220 220" role="img" aria-label="Next ability"></svg>
+            <div class="queue" aria-label="Coming up">
+              <svg class="orb second" id="q1" viewBox="0 0 64 64"></svg>
+              <svg class="orb third" id="q2" viewBox="0 0 64 64"></svg>
+            </div>
+          </div>
+          <div class="callout" aria-live="polite">
+            <span class="name"><span id="callName">Seal of Command</span><span class="key" id="callKey">Q</span></span>
+            <span class="why" id="callWhy">No seal active.</span>
+          </div>
+        </div>
+
+        <div class="log" id="log" aria-label="Combat log"></div>
+      </div>
+
+      <div class="controls">
+        <div class="transport">
+          <button class="btn primary" id="play">Pause</button>
+          <button class="btn" id="step" title="Advance half a second">Step</button>
+          <button class="btn" id="reset">New pull</button>
+        </div>
+        <div class="ctl">
+          <span class="lbl">Speed</span>
+          <div class="seg" data-key="mult"><button data-v="0.5">½×</button><button data-v="1" aria-pressed="true">1×</button><button data-v="2">2×</button></div>
+        </div>
+        <div class="ctl">
+          <span class="lbl">Target type</span>
+          <div class="seg" data-key="type"><button data-v="Beast" aria-pressed="true">Beast</button><button data-v="Undead">Undead</button><button data-v="Demon">Demon</button></div>
+        </div>
+        <div class="ctl">
+          <span class="lbl">Enemies in melee</span>
+          <div class="seg" data-key="enemies"><button data-v="1" aria-pressed="true">1</button><button data-v="3">3 or more</button></div>
+        </div>
+        <div class="ctl">
+          <div class="range-row"><label for="speed">Weapon speed</label><span id="speedVal">3.3 s</span></div>
+          <input type="range" id="speed" min="2" max="4" step="0.1" value="3.3">
+        </div>
+        <div class="ctl">
+          <span class="lbl">Consecration</span>
+          <div class="seg" data-key="cons"><button data-v="aoe" aria-pressed="true">3+ enemies</button><button data-v="always">Always</button><button data-v="never">Never</button></div>
+        </div>
+        <label class="check"><input type="checkbox" id="how"><span>Hammer of Wrath learned<small>Trainer spell at level 44. Shows when the target drops below 20% health.</small></span></label>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="anatomy">
+    <header class="col">
+      <p class="eyebrow">Anatomy</p>
+      <h2 id="anatomy">Four things you read from one shape</h2>
+    </header>
+    <div class="two">
+      <ul class="plain">
+        <li><div><b>Center glyph</b><span>The next ability to press. Seals sit in a hexagon frame so you can tell them from attacks at a glance. A number on the glyph means it's coming off cooldown.</span></div></li>
+        <li><div><b>Three inner arcs</b><span>Unsealed Wrath stacks. They take the color of the stored seal: red for Command, amber for Righteousness.</span></div></li>
+        <li><div><b>Outer ring</b><span>Your swing timer. It fills toward the notch at the top, and your next swing lands at the notch. When it's time to swap seals, the swap has to happen before the ring reaches the notch.</span></div></li>
+        <li><div><b>Two trailing orbs</b><span>What's coming up next, fading with distance. Useful for planning a seal swap around the global cooldown.</span></div></li>
+      </ul>
+      <div class="note" style="align-self:start">All artwork is drawn from scratch in one line style: no game icons, no art borrowed from other addons. In-game, the halo is a single movable frame you can scale between 60% and 160%.</div>
+    </div>
+  </section>
+
+  <section aria-labelledby="states">
+    <header class="col">
+      <p class="eyebrow">States</p>
+      <h2 id="states">What the halo looks like when it matters</h2>
+    </header>
+    <div class="states" id="statesGrid"></div>
+  </section>
+
+  <section aria-labelledby="prio">
+    <header class="col">
+      <p class="eyebrow">How it picks</p>
+      <h2 id="prio">Priority, top to bottom</h2>
+      <p class="lede">Every moment, Sigil walks down this list and shows the first thing you can press. The order follows the current WoW Forever guides, adjusted for your talents. The guides disagree on whether Holy Strike or Judgement goes first; since Judgement skips the global cooldown, the order between those two barely matters.</p>
+    </header>
+    <ol class="prio" id="prioList"></ol>
+  </section>
+
+  <section aria-labelledby="cycle">
+    <header class="col">
+      <p class="eyebrow">The weave</p>
+      <h2 id="cycle">One seal cycle, swing by swing</h2>
+      <p class="lede">Unsealed Wrath stores a copy of your seal on every swing that lands, up to three, for 15 seconds. A swing that lands while a <em>different</em> seal is active releases all stored copies at once. So you build three Command stacks, swap to Righteousness, let one swing cash them in, and swap back.</p>
+    </header>
+    <div class="cycle-scroll">
+      <div class="cycle">
+        <div class="swing"><span class="lbl">Swing 1</span><div class="pips"><i class="pip cmd"></i><i class="pip"></i><i class="pip"></i></div><p>Command active. Stores Command 1/3.</p></div>
+        <div class="swing"><span class="lbl">Swing 2</span><div class="pips"><i class="pip cmd"></i><i class="pip cmd"></i><i class="pip"></i></div><p>Stores Command 2/3.</p></div>
+        <div class="swing"><span class="lbl">Swing 3</span><div class="pips"><i class="pip cmd"></i><i class="pip cmd"></i><i class="pip cmd"></i></div><p>Stores Command 3/3. Halo pulses: swap.</p></div>
+        <div class="swap">Seal of Righteousness</div>
+        <div class="swing release"><span class="lbl">Swing 4</span><div class="pips"><i class="pip right"></i><i class="pip"></i><i class="pip"></i></div><p>Releases 3 Command procs, each with its own chance to hit. Stores Righteousness 1/3.</p></div>
+        <div class="swap">Seal of Command</div>
+        <div class="swing release"><span class="lbl">Swing 5</span><div class="pips"><i class="pip cmd"></i><i class="pip"></i><i class="pip"></i></div><p>Releases 1 Righteousness. Stores Command 1/3. Repeat.</p></div>
+      </div>
+    </div>
+    <p class="note col">Seals cost a global cooldown. With a slow two-hander there's room for it; with a fast weapon Sigil starts calling the swap earlier so the global cooldown doesn't eat the window. A miss or a dodge stores nothing, so Sigil only counts swings that land.</p>
+  </section>
+
+  <section aria-labelledby="around">
+    <header class="col">
+      <p class="eyebrow">Around the rotation</p>
+      <h2 id="around">The things you already do by hand</h2>
+      <p class="lede">These stay out of the main halo so it only ever shows one thing to press. They appear as small marks beside it, and only when they need you.</p>
+    </header>
+    <ul class="plain col">
+      <li><div><b>Retribution Aura and your blessing</b><span>A small mark appears when your aura is off or your blessing has run out. Sigil remembers whether you last cast Blessing of Might or Blessing of Wisdom and reminds you of that one.</span></div></li>
+      <li><div><b>Running out of mana</b><span>When you can no longer afford your next ability, Sigil stops calling Consecration first, then shows a low-mana mark. That's your moment to switch to Blessing of Wisdom; Sigil won't nag you to switch back.</span></div></li>
+      <li><div><b>Hammer of Justice</b><span>Judging Seal of Command on a stunned target deals double damage. When Hammer of Justice and Judgement are both ready and Command is up, a mark shows the combo: stun, then Judgement. It's a suggestion on the side, never in the main queue, since you may be saving the stun.</span></div></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="sees">
+    <header class="col">
+      <p class="eyebrow">Limits</p>
+      <h2 id="sees">What the game lets an addon see</h2>
+      <p class="lede">WoW Forever runs on the modern game client. During combat it hides several values from every addon, so Sigil keeps its own count from what you cast and when your swings land.</p>
+    </header>
+    <div class="two">
+      <div style="display:grid;gap:12px;align-content:start">
+        <h3>Sigil can read</h3>
+        <ul class="plain">
+          <li><div>Your own casts<span>This is how it knows which seal is up and when it runs out (30 seconds).</span></div></li>
+          <li><div>Your swings<span>Exact timing everywhere. Whether a swing hit or missed is readable in the open world only.</span></div></li>
+          <li><div>Whether a spell is ready<span>Ready or not, and whether you have the mana for it.</span></div></li>
+          <li><div>Target type<span>Undead or Demon, for Exorcism. Readable in the open world; in dungeons Sigil goes by whether Exorcism is usable.</span></div></li>
+        </ul>
+      </div>
+      <div style="display:grid;gap:12px;align-content:start">
+        <h3>Hidden in combat</h3>
+        <ul class="plain">
+          <li><div>Buffs and debuffs<span>Sigil counts Unsealed Wrath stacks itself, from your swings. In dungeons and raids the game also hides misses, so the count can run one ahead after a miss or dodge. It corrects itself when the stacks expire or the fight ends.</span></div></li>
+          <li><div>Target health<span>No percentage. Sigil shows Hammer of Wrath when the game marks it usable.</span></div></li>
+          <li><div>Exact mana<span>Sigil only knows “enough for this spell” or “not enough”.</span></div></li>
+          <li><div>Cooldown seconds<span>Sigil times them itself from your casts.</span></div></li>
+        </ul>
+      </div>
+    </div>
+    <p class="note col">Is this allowed? I found no Blizzard rule for WoW Forever that forbids an addon from suggesting an ability, and several such addons are on CurseForge today. Blizzard's stated direction for this game client is that addons shouldn't make combat decisions for you, and they enforce it by hiding information, so a later patch could hide more. If that happens, Sigil gets less precise; it doesn't put your account at risk.</p>
+  </section>
+
+  <section aria-labelledby="prior">
+    <header class="col">
+      <p class="eyebrow">What already exists</p>
+      <h2 id="prior">Other Forever addons, and where Sigil differs</h2>
+      <p class="lede">I looked at the paladin and rotation addons on CurseForge. They all work the same way underneath, counting from your casts and swings. They differ in how much you have to read.</p>
+    </header>
+    <ul class="plain col">
+      <li><div><b>Hekili Forever, Rotation Forge, ForeCast</b><span>General rotation helpers for many classes. Rows or bars of the game's own spell icons, with glows and colored borders. ForeCast and Hekili both handle the Unsealed Wrath swap for Retribution.</span></div></li>
+      <li><div><b>Paladin Seal Reminders, SwedgeTimer Forever, iSealTwist</b><span>Seal and swing trackers. They show the stack count and a “twist” prompt, but not the rest of the rotation.</span></div></li>
+      <li><div><b>Sigil</b><span>One spec and one shape: next ability, stacks and swing timer in a single halo, with its own drawn glyphs in place of game icons. It also covers your aura, blessing and Hammer of Justice habits.</span></div></li>
+    </ul>
+    <p class="note col">You asked for nothing that looks like PallyPower. That addon is a column of small buttons with the game's class and blessing icons on a tooltip-style backdrop. Sigil uses none of that: no button grid, no game icons, no stock backdrop.</p>
+  </section>
+
+  <section aria-labelledby="settings">
+    <header class="col">
+      <p class="eyebrow">Settings</p>
+      <h2 id="settings">The in-game options panel</h2>
+      <p class="lede">Type <code>/sigil</code> to open it. Everything has a sensible default, so most people never need to.</p>
+    </header>
+    <div class="settings" role="group" aria-label="Sigil options mock-up">
+      <h3>Sigil</h3>
+      <div class="srow"><span>Lock position<small>Unlock to drag the halo anywhere.</small></span><input class="toggle" type="checkbox" id="s-lock" checked aria-label="Lock position"></div>
+      <div class="srow"><span>Show the reason line<small>“3 Command stacks stored: swap now”.</small></span><input class="toggle" type="checkbox" id="s-why" checked aria-label="Show the reason line"></div>
+      <div class="srow"><span>Only in combat<small>Hide the halo when you're not fighting.</small></span><input class="toggle" type="checkbox" id="s-combat" aria-label="Only in combat"></div>
+      <div class="srow"><span>Consecration<small>When Sigil should call it.</small></span><select id="s-cons" aria-label="Consecration"><option>3 or more enemies</option><option>Always</option><option>Never</option></select></div>
+      <div class="srow"><span>Aura and blessing reminders<small>Shown only when one is missing.</small></span><input class="toggle" type="checkbox" id="s-upkeep" checked aria-label="Aura and blessing reminders"></div>
+      <div class="srow"><span>Hammer of Justice cue<small>Marks the stun-then-Judgement combo when both are ready.</small></span><input class="toggle" type="checkbox" id="s-hoj" checked aria-label="Hammer of Justice cue"></div>
+      <div class="srow"><span>Hide “not ready” messages<small>Silences the red error text while you spam Attack.</small></span><input class="toggle" type="checkbox" id="s-err" checked aria-label="Hide not ready messages"></div>
+      <div class="srow"><span>Swap cue<small>A soft chime when it's time to swap seals.</small></span><select id="s-cue" aria-label="Swap cue"><option>Chime</option><option>Pulse only</option><option>Off</option></select></div>
+      <div class="srow"><span>Size<small>60% to 160%.</small></span><input type="range" id="s-size" min="60" max="160" value="100" style="max-width:160px" aria-label="Size"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="bar">
+    <header class="col">
+      <p class="eyebrow">Action bar</p>
+      <h2 id="bar">How to lay out your bar</h2>
+      <p class="lede">Three keys run the whole rotation: one Attack key you spam, and one key for each seal. The halo tells you when to press a seal key. The keys here are a suggestion; Sigil shows whichever key you actually bound.</p>
+    </header>
+    <div class="bars">
+      <div class="bar-group"><span class="lbl">The three keys</span><div class="bar" id="barMain"></div></div>
+      <div class="bar-group"><span class="lbl">When you want them</span><div class="bar" id="barSeal"></div></div>
+      <div class="bar-group"><span class="lbl">Second bar · click between pulls</span><div class="bar" id="barSide"></div></div>
+    </div>
+    <p class="note col">Attack is the macro below. Everything else is the spell dragged straight from your spellbook.</p>
+  </section>
+
+  <section aria-labelledby="macros">
+    <header class="col">
+      <p class="eyebrow">Macro</p>
+      <h2 id="macros">The Attack macro</h2>
+      <p class="lede">One macro replaces four buttons. Each press tries your attacks from top to bottom and casts the first one that's ready. Make it under Escape → Macros, then drag it onto key 1.</p>
+    </header>
+    <div class="macros">
+      <div class="macro">
+        <div class="macro-head"><h3>Attack</h3><button class="copy" data-copy="m1">Copy</button></div>
+        <pre id="m1">#showtooltip
+/startattack
+/cast Judgement
+/cast Hammer of Wrath
+/cast Holy Strike
+/cast Exorcism</pre>
+        <p>Judgement skips the global cooldown, so it fires together with the next attack. Exorcism only goes off on Undead and Demons. Hammer of Wrath does nothing until you learn it at 44.</p>
+      </div>
+      <div class="macro">
+        <div class="macro-head"><h3>Test it first</h3></div>
+        <p>This macro relies on the game moving to the next line when a spell is on cooldown. Three WoW Forever macro sites publish a Judgement + Holy Strike macro built the same way and describe that behaviour, but none of them says it was tested in the live game.</p>
+        <p>Hit a mob for 30 seconds while spamming it. If Judgement and Holy Strike both keep firing, it works. If only Judgement fires, tell me and I'll split it into two keys.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="two">
+    <section aria-labelledby="install">
+      <header><p class="eyebrow">Install</p><h2 id="install">Getting it into the game</h2></header>
+      <ol class="steps">
+        <li>Download the <code>Sigil</code> folder I'll build.</li>
+        <li>In CurseForge, open WoW Forever and use the folder button to open your AddOns folder (it sits under <code>_forever_</code>).</li>
+        <li>Drop <code>Sigil</code> in there next to your other addons, then restart the game or type <code>/reload</code>.</li>
+      </ol>
+      <p class="note">CurseForge will show Sigil but won't update it, since it isn't published there. If you like it, I can publish it so updates arrive through the app.</p>
+    </section>
+
+    <section aria-labelledby="verify">
+      <header><p class="eyebrow">Before I build</p><h2 id="verify">Check these in game</h2></header>
+      <p class="note">Confirmed by you: the Unsealed Wrath tooltip matches this design word for word, the game shows a 1–3 stack of your stored seal, and your weapon is Defender of Dalaran at 3.30 speed. The preview now uses that speed.</p>
+      <ul class="checks">
+        <li><div>Judgement and Holy Strike cooldowns<span>I'm assuming 8 and 10 seconds. Tell me if your tooltips say otherwise.</span></div></li>
+        <li><div>Does a miss add a stack?<span>Watch the stack number after a swing misses or gets dodged. I'm assuming it doesn't go up.</span></div></li>
+      </ul>
+    </section>
+  </div>
+
+  <section aria-labelledby="plan">
+    <header class="col"><p class="eyebrow">Build plan</p><h2 id="plan">What gets built, in order</h2></header>
+    <ol class="steps col">
+      <li><b>The halo on screen.</b> Movable, scalable frame with the glyph artwork, loading cleanly in WoW Forever.</li>
+      <li><b>Following the fight.</b> Active seal and Unsealed Wrath stacks counted from your casts and landed swings, cooldown timers, target type, and the swing timer.</li>
+      <li><b>The priority engine.</b> The list above, plus the two-ability queue and the reason line.</li>
+      <li><b>Options panel.</b> <code>/sigil</code>, saved per character.</li>
+      <li><b>The Attack macro and a short readme.</b> Then you play a few dungeons and tell me what feels off.</li>
+    </ol>
+  </section>
+
+</div>
+
+<script>
+(() => {
+  const GLYPHS = {
+    hex: 'M24 3 L42 13.5 L42 34.5 L24 45 L6 34.5 L6 13.5 Z',
+    SoC: 'M24 10 V37 M17.5 15.5 H30.5 M24 37 L21.5 33.5 M24 37 L26.5 33.5',
+    SoR: 'M24 36.5 C16.5 31 17.5 22.5 24 12 C30.5 22.5 31.5 31 24 36.5 Z M24 31.5 C21.5 29 22 25.5 24 22.5 C26 25.5 26.5 29 24 31.5 Z',
+    SotC: 'M24 12 V36 M15 21 H33',
+    J: 'M24 7 V40 M15 40 H33 M10 13 H38 M10 13 L5.5 25 H14.5 Z M38 13 L33.5 25 H42.5 Z M24 7 L22 10 H26 Z',
+    HS: 'M9 39 L31 17 M27 13 L35 21 M12 32 L16 36 M37 6 V11 M42 11 H37 M41 6 L37.5 9.5',
+    Exo: 'M16 24 A8 8 0 1 0 32 24 A8 8 0 1 0 16 24 M24 4 V9 M24 39 V44 M4 24 H9 M39 24 H44 M10 10 L13.5 13.5 M34.5 34.5 L38 38 M38 10 L34.5 13.5 M13.5 34.5 L10 38',
+    Cons: 'M5 35 A19 6 0 1 0 43 35 A19 6 0 1 0 5 35 M14 35 A10 3 0 1 0 34 35 A10 3 0 1 0 14 35 M24 9 V27 M16.5 15 V25 M31.5 15 V25',
+    HoW: 'M19 9 H38 V20 H19 Z M28.5 20 V42 M6 11 H14 M4 15.5 H14 M7 20 H14',
+    HoJ: 'M14 8 H34 V19 H14 Z M24 19 V34 M24 38 L25.6 41.6 L29.5 42 L26.6 44.6 L27.4 48 L24 46.2 L20.6 48 L21.4 44.6 L18.5 42 L22.4 41.6 Z',
+    Aura: 'M24 20 A4 4 0 1 0 24 28 A4 4 0 1 0 24 20 M24 13 A11 11 0 1 0 24 35 A11 11 0 1 0 24 13 M24 5 A19 19 0 0 1 43 24 M24 43 A19 19 0 0 1 5 24',
+    BoM: 'M24 42 V14 M24 14 L17 22 M24 14 L31 22 M14 30 H34 M24 6 V9',
+    BoW: 'M24 8 C17 18 14 24 14 30 A10 10 0 0 0 34 30 C34 24 31 18 24 8 Z M20 31 A4 4 0 0 0 24 35'
+  };
+  const SEALS = new Set(['SoC', 'SoR', 'SotC']);
+  const AB = {
+    SoC: { name: 'Seal of Command', color: 'var(--g-cmd)', key: 'Q' },
+    SoR: { name: 'Seal of Righteousness', color: 'var(--g-right)', key: 'E' },
+    SotC: { name: 'Seal of the Crusader', color: 'var(--g-crus)', key: 'E' },
+    J: { name: 'Judgement', color: 'var(--g-judge)', key: '1', cd: 8 },
+    HS: { name: 'Holy Strike', color: 'var(--g-holy)', key: '1', cd: 10 },
+    Exo: { name: 'Exorcism', color: 'var(--g-exo)', key: '1', cd: 15 },
+    Cons: { name: 'Consecration', color: 'var(--g-holy)', key: '2', cd: 8 },
+    HoW: { name: 'Hammer of Wrath', color: 'var(--g-judge)', key: '1', cd: 6 },
+    HoJ: { name: 'Hammer of Justice', color: 'var(--g-judge)', key: '3' },
+    Aura: { name: 'Retribution Aura', color: 'var(--g-cmd)', key: '' },
+    BoM: { name: 'Blessing of Might', color: 'var(--g-right)', key: '' },
+    BoW: { name: 'Blessing of Wisdom', color: 'var(--g-judge)', key: '' }
+  };
+
+  function glyph(key, x, y, size, opacity = 1) {
+    const s = size / 48;
+    const a = AB[key];
+    const frame = SEALS.has(key) ? `<path d="${GLYPHS.hex}" stroke-opacity=".55"/>` : '';
+    return `<g transform="translate(${x} ${y}) scale(${s})" fill="none" stroke="${a.color}" stroke-width="${2.4 / Math.max(s, 0.6) * Math.min(s, 1.4)}" stroke-linecap="round" stroke-linejoin="round" opacity="${opacity}">${frame}<path d="${GLYPHS[key]}"/></g>`;
+  }
+
+  function arc(r, a0, a1) {
+    const p = a => { const t = (a - 90) * Math.PI / 180; return [110 + r * Math.cos(t), 110 + r * Math.sin(t)]; };
+    const [x0, y0] = p(a0), [x1, y1] = p(a1);
+    return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+  }
+
+  let uid = 0;
+  function haloSVG({ top, readyIn = 0, stacks = 0, stored = null, swingPct = 0, pulse = false, burst = false, pulseT = null, burstT = null, burstColor = null }) {
+    const id = 'h' + (uid++);
+    const C = 2 * Math.PI * 100;
+    const stackColor = stored ? AB[stored].color : 'var(--scene-gold)';
+    const segs = [[8, 112], [128, 232], [248, 352]].map((s, i) =>
+      `<path d="${arc(86, s[0], s[1])}" stroke="${i < stacks ? stackColor : 'var(--scene-line)'}" stroke-width="7" stroke-linecap="round" fill="none"/>`).join('');
+    const topColor = top ? AB[top].color : 'var(--scene-gold)';
+    const waiting = readyIn > 0.05;
+    return `
+      <defs>
+        <radialGradient id="${id}d" cx="50%" cy="38%" r="65%">
+          <stop offset="0" stop-color="#1d2b3d"/><stop offset="1" stop-color="#080c13"/>
+        </radialGradient>
+        <radialGradient id="${id}g" cx="50%" cy="50%" r="50%">
+          <stop offset="0.55" stop-color="${topColor}" stop-opacity=".18"/><stop offset="1" stop-color="${topColor}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle cx="110" cy="110" r="108" fill="url(#${id}g)"/>
+      <circle cx="110" cy="110" r="100" fill="none" stroke="var(--scene-line)" stroke-width="2.5"/>
+      <circle cx="110" cy="110" r="100" fill="none" stroke="var(--scene-gold)" stroke-width="2.5" stroke-linecap="round"
+        stroke-dasharray="${(C * Math.min(swingPct, 0.999)).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 110 110)"/>
+      <path d="M110 4 L105 -2 H115 Z" fill="var(--scene-gold)" transform="translate(0 3)"/>
+      ${segs}
+      <circle cx="110" cy="110" r="72" fill="url(#${id}d)" stroke="${topColor}" stroke-opacity=".45" stroke-width="1.5"/>
+      <circle cx="110" cy="110" r="66" fill="none" stroke="var(--scene-line)" stroke-width="1"/>
+      ${pulse ? (pulseT === null
+        ? `<circle class="pulse" cx="110" cy="110" r="74" fill="none" stroke="${topColor}" stroke-width="3"/>`
+        : `<circle cx="110" cy="110" r="${(74 + 16 * pulseT).toFixed(1)}" fill="none" stroke="${topColor}" stroke-width="3" opacity="${(0.85 * (1 - pulseT)).toFixed(2)}"/>`) : ''}
+      ${burst ? (burstT === null
+        ? `<circle class="burst" cx="110" cy="110" r="86" fill="none" stroke="${stackColor}" stroke-width="6"/>`
+        : `<circle cx="110" cy="110" r="${(80 + 26 * burstT).toFixed(1)}" fill="none" stroke="${burstColor || stackColor}" stroke-width="${(7 * (1 - burstT) + 1).toFixed(1)}" opacity="${(0.9 * (1 - burstT)).toFixed(2)}"/>`) : ''}
+      ${top ? glyph(top, 110 - 38, 110 - 38, 76, waiting ? 0.35 : 1) : ''}
+      ${waiting ? `<text x="110" y="122" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="34" font-weight="500" fill="var(--scene-ink)">${readyIn.toFixed(readyIn < 3 ? 1 : 0)}</text>` : ''}`;
+  }
+
+  function orbSVG(key) {
+    if (!key) return '';
+    return `<circle cx="32" cy="32" r="29" fill="#0b111a" stroke="${AB[key].color}" stroke-opacity=".4" stroke-width="1.5"/>${glyph(key, 13, 13, 38)}`;
+  }
+
+  /* ---------- simulation ---------- */
+  const cfg = { mult: 1, type: 'Beast', enemies: 1, cons: 'aoe', speed: 3.3, opener: false, how: false, fight: 70 };
+  let s, playing = true, burstUntil = 0, burstColor = null;
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const logEl = document.getElementById('log');
+
+  function fresh() {
+    s = { t: 0, gcd: 0, cd: { J: 0, HS: 0, Exo: 0, Cons: 0, HoW: 0 }, seal: null, stored: null, stacks: 0,
+          swing: 0.8, hp: 100, jotc: false, respawn: 0, log: [] };
+    logEl.innerHTML = '';
+    log('Pull. Auto-attack starts.');
+  }
+
+  function fmt(t) { const m = Math.floor(t / 60), sec = (t % 60).toFixed(1).padStart(4, '0'); return `${m}:${sec}`; }
+  function log(msg) {
+    const d = document.createElement('div');
+    d.innerHTML = `<span class="t">${fmt(s.t)}</span>`;
+    d.appendChild(document.createTextNode(msg));
+    logEl.prepend(d);
+    while (logEl.children.length > 7) logEl.lastChild.remove();
+  }
+
+  function candidates() {
+    const c = [];
+    const weave = s.seal === 'SoC' || s.seal === 'SoR';
+    if (cfg.opener && !s.jotc) {
+      if (s.seal !== 'SotC') c.push({ key: 'SotC', why: 'Opener: set up Judgement of the Crusader.' });
+      else c.push({ key: 'J', why: 'Judge the Crusader seal. Holy Strike keeps it up from here.' });
+    }
+    if (!s.seal) c.push({ key: 'SoC', why: 'No seal active.' });
+    if (s.seal && !weave && (s.jotc || !cfg.opener)) c.push({ key: 'SoC', why: 'Back to Command to start building stacks.' });
+    if (s.seal === 'SoC' && s.stored === 'SoC' && s.stacks >= 3) c.push({ key: 'SoR', why: '3 Command stacks stored. Swap before the next swing.' });
+    if (s.seal === 'SoR' && s.stored === 'SoR') c.push({ key: 'SoC', why: 'Command procs released. Swap back and rebuild.' });
+    if (cfg.how && s.hp < 20) c.push({ key: 'HoW', why: 'Target below 20%. The game just marked it usable.' });
+    c.push({ key: 'HS', why: 'Strongest attack on cooldown.' });
+    if (weave) c.push({ key: 'J', why: 'Judgement is ready. It skips the global cooldown.' });
+    if (cfg.type !== 'Beast') c.push({ key: 'Exo', why: `${cfg.type} target: Exorcism on cooldown.` });
+    if (cfg.cons === 'always' || (cfg.cons === 'aoe' && cfg.enemies >= 3)) c.push({ key: 'Cons', why: cfg.enemies >= 3 ? '3 or more enemies in melee.' : 'Nothing better is ready.' });
+    return c;
+  }
+
+  const cdOf = k => s.cd[k] || 0;
+  const rdy = k => k === 'J' ? cdOf(k) : Math.max(cdOf(k), s.gcd);
+  function queue() {
+    const c = candidates(), out = [], seen = new Set();
+    for (const x of c) if (!seen.has(x.key) && cdOf(x.key) <= s.gcd + 0.05) { out.push(x); seen.add(x.key); break; }
+    if (!out.length && c.length) { const soon = [...c].sort((a, b) => cdOf(a.key) - cdOf(b.key))[0]; out.push(soon); seen.add(soon.key); }
+    for (const x of c) { if (out.length >= 3) break; if (!seen.has(x.key) && cdOf(x.key) <= s.gcd + 4) { out.push(x); seen.add(x.key); } }
+    return out;
+  }
+
+  function press(key) {
+    const a = AB[key];
+    if (key !== 'J') s.gcd = 1.5;
+    if (a.cd) s.cd[key] = a.cd;
+    if (SEALS.has(key)) { s.seal = key; log(`Cast ${a.name}`); return; }
+    if (key === 'J') {
+      if (s.seal === 'SotC') { s.jotc = true; log('Judgement of the Crusader on target'); }
+      else log(`Judgement (${AB[s.seal].name} stays up)`);
+      return;
+    }
+    if (key === 'HS') { log('Holy Strike'); return; }
+    log(a.name);
+  }
+
+  function land() {
+    const parts = [];
+    if (s.stacks > 0 && s.stored && s.stored !== s.seal) {
+      parts.push(`releases ${s.stacks}× ${AB[s.stored].name.replace('Seal of ', '')}`);
+      burstColor = AB[s.stored].color; s.stacks = 0; s.stored = null; burstUntil = s.t + 0.6;
+    }
+    if (s.seal) {
+      if (s.stored === s.seal) s.stacks = Math.min(3, s.stacks + 1); else { s.stored = s.seal; s.stacks = 1; }
+      parts.push(`stores ${AB[s.seal].name.replace('Seal of ', '')} ${s.stacks}/3`);
+    }
+    log('Swing' + (parts.length ? ': ' + parts.join(', ') : ''));
+  }
+
+  function tick(dt) {
+    if (s.respawn > 0) { s.respawn -= dt; if (s.respawn <= 0) fresh(); return; }
+    s.t += dt;
+    s.gcd = Math.max(0, s.gcd - dt);
+    for (const k in s.cd) s.cd[k] = Math.max(0, s.cd[k] - dt);
+    s.swing -= dt;
+    if (s.swing <= 0) { s.swing += cfg.speed; land(); }
+    s.hp = Math.max(0, s.hp - dt * 100 / cfg.fight * (cfg.enemies >= 3 ? 0.8 : 1));
+    if (s.hp <= 0) { log('Target dies. Next pull in 2 seconds.'); s.respawn = 2; return; }
+    const q = queue(); if (q[0] && rdy(q[0].key) <= 0) press(q[0].key);
+  }
+
+  const $ = id => document.getElementById(id);
+  function render() {
+    const q = queue();
+    const top = q[0];
+    const isSwap = top && (top.key === 'SoR' || (top.key === 'SoC' && s.stored === 'SoR'));
+    $('halo').innerHTML = haloSVG({
+      top: top && top.key, readyIn: top ? rdy(top.key) : 0,
+      stacks: s.stacks, stored: s.stored, swingPct: 1 - s.swing / cfg.speed,
+      pulse: !!isSwap, burst: s.t < burstUntil,
+      pulseT: calm ? 0.3 : (performance.now() % 1100) / 1100,
+      burstT: calm ? 0.4 : Math.min(1, Math.max(0, 1 - (burstUntil - s.t) / 0.6)), burstColor
+    });
+    $('q1').innerHTML = orbSVG(q[1] && q[1].key);
+    $('q2').innerHTML = orbSVG(q[2] && q[2].key);
+    if (top) { $('callName').textContent = AB[top.key].name; $('callKey').textContent = AB[top.key].key; $('callWhy').textContent = top.why; }
+    $('hp').style.width = s.hp + '%';
+    $('hpText').textContent = Math.ceil(s.hp) + '%' + (s.hp < 20 ? ' · execute range' : '');
+    $('hpbar').classList.toggle('exec', s.hp < 20);
+    $('tgtName').textContent = `Target · ${cfg.type}${cfg.enemies >= 3 ? ' + 2 more' : ''}`;
+    $('sealNow').textContent = s.seal ? AB[s.seal].name : 'None';
+  }
+
+  fresh(); render();
+  let last = performance.now(), acc = 0;
+  function loop(now) {
+    const dtReal = Math.min(0.25, (now - last) / 1000); last = now;
+    if (playing) { acc += dtReal * cfg.mult; while (acc >= 0.05) { tick(0.05); acc -= 0.05; } render(); }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  $('play').addEventListener('click', () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; });
+  $('step').addEventListener('click', () => { for (let i = 0; i < 10; i++) tick(0.05); render(); });
+  $('reset').addEventListener('click', () => { fresh(); render(); });
+  document.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    const k = seg.dataset.key, v = b.dataset.v;
+    cfg[k] = (k === 'type' || k === 'cons') ? v : Number(v);
+    render();
+  }));
+  $('speed').addEventListener('input', e => { cfg.speed = Number(e.target.value); $('speedVal').textContent = cfg.speed.toFixed(1) + ' s'; s.swing = Math.min(s.swing, cfg.speed); });
+  $('how').addEventListener('change', e => { cfg.how = e.target.checked; });
+
+  /* ---------- static states ---------- */
+  const states = [
+    { t: 'Building', p: 'Two Command stacks. Holy Strike is up.', o: { top: 'HS', stacks: 2, stored: 'SoC', swingPct: 0.4 } },
+    { t: 'Swap now', p: 'Three stacks stored. The halo pulses until you swap.', o: { top: 'SoR', stacks: 3, stored: 'SoC', swingPct: 0.62, pulse: true } },
+    { t: 'Waiting', p: 'Nothing ready. The number counts down Judgement.', o: { top: 'J', readyIn: 1.4, stacks: 1, stored: 'SoC', swingPct: 0.2 } },
+    { t: 'Execute', p: 'Target below 20%. Hammer of Wrath jumps the queue.', o: { top: 'HoW', stacks: 1, stored: 'SoR', swingPct: 0.8 } }
+  ];
+  $('statesGrid').innerHTML = states.map(x =>
+    `<div class="state"><svg viewBox="0 0 220 220" role="img" aria-label="${x.t}">${haloSVG(x.o)}</svg><b>${x.t}</b><p>${x.p}</p></div>`).join('');
+
+  /* ---------- priority list ---------- */
+  const prio = [
+    ['SoC', 'Keep a seal up', 'Seal of Command whenever no seal is active.'],
+    ['SoR', 'Swap at 3 Command stacks', 'Seal of Righteousness before the next swing lands.'],
+    ['SoC', 'Swap back after the release', 'Seal of Command as soon as the Command procs have gone off.'],
+    ['HoW', 'Hammer of Wrath below 20%', 'Once you learn it at 44. Sigil shows it the moment the game marks it usable.'],
+    ['HS', 'Holy Strike on cooldown', 'Every 10 seconds. Your hardest-hitting button.'],
+    ['J', 'Judgement on cooldown', 'Every 8 seconds with your talents. It skips the global cooldown, keeps your seal up, and refunds 60% of the seal’s mana (Sanctified Judgement).'],
+    ['Exo', 'Exorcism on Undead and Demons', 'On cooldown, only against those target types.'],
+    ['Cons', 'Consecration', 'Your choice in settings: on 3 or more enemies, always when nothing better is ready, or never. First thing dropped when mana runs low.']
+  ];
+  $('prioList').innerHTML = prio.map((x, i) =>
+    `<li><span class="n">${i + 1}</span><svg class="chip" viewBox="0 0 64 64" aria-hidden="true">${orbSVG(x[0])}</svg><div><b>${x[1]}</b><span>${x[2]}</span></div></li>`).join('');
+
+  /* ---------- action bar ---------- */
+  const slot = (g, key, name, sub, later) => `<div class="slot${later ? ' later' : ''}">${key ? `<span class="key">${key}</span>` : ''}<svg viewBox="0 0 64 64" aria-hidden="true">${orbSVG(g)}</svg><b>${name}</b><small>${sub}</small></div>`;
+  $('barMain').innerHTML = [
+    slot('HS', '1', 'Attack', 'Macro: spam this'),
+    slot('SoC', 'Q', 'Seal of Command', 'Your default seal'),
+    slot('SoR', 'E', 'Seal of Righteousness', 'At 3 stacks')
+  ].join('');
+  $('barSeal').innerHTML = [
+    slot('Cons', '2', 'Consecration', 'Packs of enemies'),
+    slot('HoJ', '3', 'Hammer of Justice', 'Stun, then Attack')
+  ].join('');
+  $('barSide').innerHTML = [
+    slot('Aura', '', 'Retribution Aura', 'Once per login'),
+    slot('BoM', '', 'Blessing of Might', 'Your default'),
+    slot('BoW', '', 'Blessing of Wisdom', 'When mana runs low')
+  ].join('');
+
+  /* ---------- copy buttons ---------- */
+  document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', () => {
+    const pre = document.getElementById(b.dataset.copy);
+    const done = () => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); };
+    navigator.clipboard.writeText(pre.textContent).then(done).catch(() => {
+      const r = document.createRange(); r.selectNodeContents(pre);
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      b.textContent = 'Selected';
+    });
+  }));
+})();
+</script>
