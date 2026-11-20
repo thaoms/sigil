@@ -212,7 +212,7 @@ expect("swing released righteousness and stored command", ns.Game.tracker.stored
 cast(1866, 10)
 fire("UNIT_COMBAT", "target", "DODGE", "", 0, 1); tick(0.1)
 expect("a dodge right after an ability is the ability's", ns.Game.tracker.stored, "command")
-tick(0.3)
+tick(0.5)
 fire("UNIT_COMBAT", "target", "PARRY", "", 0, 1); tick(0.1)
 expect("a later parry undoes the swing", ns.Game.tracker.stored, "righteousness")
 expect("miss counted", ns.Game.stats.misses, 1)

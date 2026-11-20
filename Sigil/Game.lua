@@ -553,7 +553,9 @@ local function onUnitCombat(unit, action, _, amount)
     verdict = "ability"
   elseif plain(try(IsInGroup)) then
     verdict = "in a group"
-  elseif sinceSwing >= 0 and sinceSwing <= 2.0 and Game.tracker:swingMissed(now) then
+  elseif sinceSwing < 0.25 then
+    verdict = "too soon after the swing to be its result"   -- live: swing results took 0.3s or more
+  elseif sinceSwing <= 2.0 and Game.tracker:swingMissed(now) then
     verdict = "swing undone, now x" .. Game.tracker.stacks
     Game.stats.misses = (Game.stats.misses or 0) + 1
   end
