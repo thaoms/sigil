@@ -6,6 +6,10 @@ Sigil shows which seal to press and when, your Unsealed Wrath stacks, your swing
 
 Version 0.2.0, for WoW Forever 1.60.1 (`## Interface: 16001`).
 
+| A seal is called | The opener | Out of combat |
+|---|---|---|
+| ![The halo calling Seal of Command on key 3](docs/screenshots/halo-seal-call.png) | ![The halo calling the Seal of the Crusader opener](docs/screenshots/halo-opener.png) | ![The idle halo with a low mana bar and a drink reminder](docs/screenshots/halo-idle.png) |
+
 ## What it does
 
 - **One halo.** The spell icon and key to press in the middle, three arcs for Unsealed Wrath stacks, an outer ring for your swing timer, a mana bar underneath.
@@ -29,6 +33,8 @@ Copies `Sigil/` into `_forever_/Interface/AddOns`. Restart the game the first ti
 
 A setup window opens on first login. It creates the Attack macro, lists Sigil's buttons with the key each is on, and can place missing ones into empty bar slots. It never replaces a button.
 
+![The setup window listing each button and the key it is on](docs/screenshots/setup.png)
+
 | Command | Does |
 |---|---|
 | `/sigil` | Options (also the minimap button) |
@@ -37,6 +43,8 @@ A setup window opens on first login. It creates the Attack macro, lists Sigil's 
 | `/sigil compare` | Average kill time per mob for each seal pattern |
 | `/sigil check` | Saves a report of what Sigil can read; `/reload` writes it to disk |
 | `/sigil lock`, `unlock`, `reset`, `scale 0.6-1.6` | Halo position and size |
+
+![The options window](docs/screenshots/options.png)
 
 Suggested bar: 1 Attack macro, 2 Seal of Command, 3 Seal of Righteousness, 4 Consecration, 5 Hammer of Justice, and Seal of Wisdom on any key. Sigil shows whichever keys you actually use.
 
@@ -57,8 +65,9 @@ Code layout:
 
 ## Tested
 
-- Solo, in live fights: the stack count matched the real buff in 30 consecutive fights across both patterns, and the Cooldown Manager's signal agreed with Sigil in 399 of 399 checks.
-- Not yet seen in a live fight: low mana and Seal of Wisdom, the Consecration and Hammer of Justice marks, groups and dungeons, and the Cooldown Manager correction itself.
+- Solo, in live fights: the stack count matched the real buff in 50 consecutive fights across both patterns, and the Cooldown Manager's signal agreed with Sigil in over 2,000 checks with no disagreement.
+- Seen working live: the Crusader opener, the low-mana level with its drink reminder, and the automatic stun.
+- Not yet seen in a live fight: Seal of Wisdom recovery, the Consecration mark, groups and dungeons, and the Cooldown Manager correction itself.
 
 ## Develop
 
