@@ -104,6 +104,7 @@ C_SpellBook = {
   GetNumSpellBookSkillLines = function() return 0 end,
 }
 C_Spell = {
+  GetSpellTexture = function(id) return 130000 + id end,
   GetSpellName = function(id)
     local names = { [20271] = "Judgement", [1866] = "Holy Strike", [879] = "Exorcism", [26573] = "Consecration", [853] = "Hammer of Justice",
       [20915] = "Seal of Command", [21084] = "Seal of Righteousness", [20166] = "Seal of Wisdom", [7294] = "Retribution Aura", [19740] = "Blessing of Might" }
@@ -164,6 +165,7 @@ end
 fire("ADDON_LOADED", "Sigil")
 fire("PLAYER_LOGIN")
 expect("started", ns.ready, true)
+ns.db.pattern = "burst"      -- the fight below plays the 3-and-1 pattern
 expect("start error", SigilDB.startError, nil)
 ns.db.hojInMacro = true; ns.Options.apply("hojInMacro")
 expect("stun can be added to the macro", world.macros.SigilAttack, "#showtooltip\n/startattack\n/cast Hammer of Justice\n/cast Judgement\n/cast Holy Strike\n/cast Exorcism")
@@ -274,6 +276,16 @@ mb.scripts.OnEnter(mb); mb.scripts.OnLeave(mb)
 mb.scripts.OnDragStart(mb); mb.scripts.OnUpdate(mb); mb.scripts.OnDragStop(mb)
 expect("dragging moves it around the edge", math.floor(ns.db.minimapAngle + 0.5), 90)
 Sigil_OnAddonCompartmentClick()
+
+-- cooldown manager watching
+BuffIconCooldownViewer = widget("Frame")
+local echoItem = setmetatable({ cooldownID = 200341 }, { __index = function() return nil end })
+function BuffIconCooldownViewer:GetChildren() return echoItem end
+world.combat = true; fire("PLAYER_REGEN_DISABLED"); tick(1.0)
+expect("cooldown manager button found", ns.Game.cdm.found[200341], "BuffIconCooldownViewer")
+echoItem.auraInstanceID = SECRET; tick(0.6)
+expect("a secret instance id reads as up", ns.Game.readCooldownManager().echo, true)
+world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 
 -- commands
 SlashCmdList.SIGIL("check")

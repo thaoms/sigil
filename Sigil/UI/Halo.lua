@@ -1,5 +1,5 @@
 -- The halo: one shape showing what to press, your stacks, your swing timer
--- and your mana level.
+-- and your mana.
 local _, ns = ...
 local Data = ns.Data
 
@@ -8,6 +8,7 @@ ns.Halo = Halo
 
 local SIZE = 176                 -- pixels at scale 1; artwork is drawn on a 220-unit grid
 local U = SIZE / 220
+local ROUND_MASK = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
 
 local function tex(parent, name, layer, sub)
   local t = parent:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
@@ -20,16 +21,49 @@ local function tint(t, c, a)
   t:SetVertexColor(c[1], c[2], c[3], a or 1)
 end
 
+-- Cuts a square spell icon into a circle. Returns false if the client can't.
+local function makeRound(owner, icon)
+  local ok = pcall(function()
+    local mask = owner:CreateMaskTexture()
+    mask:SetTexture(ROUND_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    mask:SetAllPoints(icon)
+    icon:AddMaskTexture(mask)
+  end)
+  if not ok then pcall(icon.SetTexCoord, icon, 0.07, 0.93, 0.07, 0.93) end
+  return ok
+end
+
+-- Shows the game's own icon for a call; falls back to Sigil's drawn glyph.
+local function setIcon(icon, glyph, id, color)
+  local file = ns.Game.icon(id)
+  if file then
+    icon:SetTexture(file)
+    icon:SetVertexColor(1, 1, 1, 1)
+    icon:Show()
+    glyph:Hide()
+  else
+    icon:Hide()
+    glyph:SetTexture(Data.MEDIA .. (Data.glyph[id] or "glyph_attack"))
+    tint(glyph, color)
+    glyph:Show()
+  end
+end
+
 local function makeOrb(parent, size)
   local o = CreateFrame("Frame", nil, parent)
   o:SetSize(size, size)
   o.bg = tex(o, "orb", "BACKGROUND")
-  o.edge = tex(o, "orb_edge", "BORDER")
+  o.icon = o:CreateTexture(nil, "ARTWORK")
+  o.icon:SetPoint("CENTER")
+  o.icon:SetSize(size * 0.86, size * 0.86)
+  makeRound(o, o.icon)
   o.glyph = o:CreateTexture(nil, "ARTWORK")
   o.glyph:SetPoint("CENTER")
   o.glyph:SetSize(size * 0.62, size * 0.62)
+  o.edge = tex(o, "orb_edge", "OVERLAY")
   o.key = o:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   o.key:SetPoint("TOP", o, "BOTTOM", 0, -1)
+  pcall(o.key.SetFont, o.key, STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
   o:Hide()
   return o
 end
@@ -37,9 +71,8 @@ end
 local function setOrb(o, id, key, alpha)
   if not id then o:Hide() return end
   local c = Data.color[id] or Data.color.ink
-  o.glyph:SetTexture(Data.MEDIA .. (Data.glyph[id] or "glyph_attack"))
-  tint(o.glyph, c)
-  tint(o.edge, c, 0.45)
+  setIcon(o.icon, o.glyph, id, c)
+  tint(o.edge, c, 0.9)
   o.key:SetText(key or "")
   o:SetAlpha(alpha or 1)
   o:Show()
@@ -89,69 +122,77 @@ function Halo.create()
 
   f.notch = tex(art, "notch", "ARTWORK", 2)
   tint(f.notch, Data.color.gold)
-  f.stacks, f.mana = {}, {}
-  for i = 1, 3 do
-    f.stacks[i] = tex(art, "stack" .. i, "ARTWORK", 1)
-    f.mana[i] = tex(art, "mana" .. i, "ARTWORK", 1)
-  end
+  f.stacks = {}
+  for i = 1, 3 do f.stacks[i] = tex(art, "stack" .. i, "ARTWORK", 1) end
   f.disc = tex(art, "disc", "ARTWORK", 2)
-  f.edge = tex(art, "disc_edge", "ARTWORK", 3)
-  f.pulse = tex(art, "pulse", "OVERLAY", 1)
-  f.pulse:SetAlpha(0)
+
+  -- the spell's own icon, cut round, filling the disc
+  f.icon = art:CreateTexture(nil, "ARTWORK", nil, 3)
+  f.icon:SetPoint("CENTER")
+  f.icon:SetSize(136 * U, 136 * U)
+  makeRound(art, f.icon)
+  f.glyph = art:CreateTexture(nil, "ARTWORK", nil, 3)
+  f.glyph:SetPoint("CENTER", 0, 10 * U)
+  f.glyph:SetSize(70 * U, 70 * U)
+  f.edge = tex(art, "disc_edge", "OVERLAY", 1)
   f.burst = tex(art, "burst", "OVERLAY", 2)
   f.burst:SetAlpha(0)
 
-  f.glyph = art:CreateTexture(nil, "OVERLAY", nil, 3)
-  f.glyph:SetPoint("CENTER", 0, 10 * U)
-  f.glyph:SetSize(70 * U, 70 * U)
-
-  local okAnim, group = pcall(f.pulse.CreateAnimationGroup, f.pulse)
-  if okAnim and group then
-    pcall(function()
-      group:SetLooping("BOUNCE")
-      local a = group:CreateAnimation("Alpha")
-      a:SetFromAlpha(0.9)
-      a:SetToAlpha(0.1)
-      a:SetDuration(0.45)
-    end)
-    f.pulseAnim = group
-  end
+  -- the swap cue: a thick ring that keeps bursting outward from the halo
+  local pulse = CreateFrame("Frame", nil, f)
+  pulse:SetPoint("CENTER")
+  pulse:SetSize(SIZE, SIZE)
+  pulse:SetFrameLevel(f:GetFrameLevel() + 2)
+  f.pulseFrame = pulse
+  f.pulse = tex(pulse, "pulse", "OVERLAY", 1)
+  f.pulse:SetAlpha(0)
+  pcall(f.pulse.SetBlendMode, f.pulse, "ADD")
 
   local labels = CreateFrame("Frame", nil, f)
   labels:SetAllPoints(f)
-  labels:SetFrameLevel(f:GetFrameLevel() + 4)
+  labels:SetFrameLevel(f:GetFrameLevel() + 5)
   f.labels = labels
+
+  -- real mana: the game draws the true value into this bar; Sigil never reads it
+  local okBar, bar = pcall(CreateFrame, "StatusBar", nil, labels)
+  if okBar and bar then
+    f.manaBar = bar
+    bar:SetSize(SIZE * 0.66, 6)
+    bar:SetPoint("TOP", f, "BOTTOM", 0, 3)
+    pcall(bar.SetStatusBarTexture, bar, "Interface\\Buttons\\WHITE8X8")
+    local bg = bar:CreateTexture(nil, "BACKGROUND")
+    bg:SetPoint("TOPLEFT", -1, 1)
+    bg:SetPoint("BOTTOMRIGHT", 1, -1)
+    bg:SetColorTexture(0.02, 0.03, 0.05, 0.85)
+  end
+
   -- dark plate behind the text so it reads on any ground
   f.plate = labels:CreateTexture(nil, "BACKGROUND")
   f.plate:SetColorTexture(0.02, 0.03, 0.05, 0.62)
-  f.plate:SetPoint("TOP", f, "BOTTOM", 0, -2)
+  f.plate:SetPoint("TOP", f, "BOTTOM", 0, -8)
   f.plate:SetSize(SIZE * 1.75, 44)
 
-  -- the key to press, large, inside the disc
+  -- the key to press, large, at the bottom of the disc
   f.key = labels:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
-  f.key:SetPoint("CENTER", f, "CENTER", 0, -46 * U)
+  f.key:SetPoint("CENTER", f, "CENTER", 0, -40 * U)
   f.key:SetTextColor(1, 1, 1)
 
   f.name = labels:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  f.name:SetPoint("TOP", f, "BOTTOM", 0, -8)
+  f.name:SetPoint("TOP", f, "BOTTOM", 0, -14)
   f.why = labels:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   f.why:SetPoint("TOP", f.name, "BOTTOM", 0, -3)
-  f.why:SetWidth(0)
   f.marks = labels:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   f.marks:SetPoint("TOP", f.why, "BOTTOM", 0, -4)
-  f.marks:SetWidth(0)
   f.marks:SetTextColor(1.00, 0.82, 0.30)
   local font = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
-  pcall(f.key.SetFont, f.key, font, 22, "THICKOUTLINE")
+  pcall(f.key.SetFont, f.key, font, 24, "THICKOUTLINE")
   pcall(f.name.SetFont, f.name, font, 16, "OUTLINE")
   pcall(f.why.SetFont, f.why, font, 12, "OUTLINE")
   pcall(f.marks.SetFont, f.marks, font, 12, "OUTLINE")
 
   f.orbs = {}
   for i = 1, 3 do
-    local size = (i == 1 and 54 or 46) * U
-    local o = makeOrb(labels, size)
-    f.orbs[i] = o
+    f.orbs[i] = makeOrb(labels, (i == 1 and 54 or 46) * U)
   end
   f.orbs[1]:SetPoint("LEFT", f, "RIGHT", 6, 26 * U)
   f.orbs[2]:SetPoint("TOP", f.orbs[1], "BOTTOM", 0, -16)
@@ -195,16 +236,38 @@ function Halo.release(released)
   f.burstUntil = GetTime() + 0.6
 end
 
-local function setPulse(f, on, c)
-  if on == f.pulsing then return end
-  f.pulsing = on
-  if on then
-    tint(f.pulse, c)
-    if f.pulseAnim then pcall(f.pulseAnim.Play, f.pulseAnim) else f.pulse:SetAlpha(0.8) end
-  else
-    if f.pulseAnim then pcall(f.pulseAnim.Stop, f.pulseAnim) end
-    f.pulse:SetAlpha(0)
+-- Feeds the hidden mana value straight into the bar. The game accepts the
+-- hidden number here; if it ever refuses, the bar is switched off.
+function Halo.updateMana(level)
+  local f = Halo.frame
+  local bar = f and f.manaBar
+  if not bar or f.manaBarBroken then return end
+  local ok = pcall(function()
+    bar:SetMinMaxValues(0, UnitPowerMax("player", 0))
+    bar:SetValue(UnitPower("player", 0))
+  end)
+  if not ok then
+    f.manaBarBroken = true
+    bar:Hide()
+    ns.Game.log("mana bar refused the value; hidden")
+    return
   end
+  local c = Data.manaColor[level or 3]
+  pcall(bar.SetStatusBarColor, bar, c[1], c[2], c[3], 1)
+end
+
+Halo.SOUNDS = {
+  ready = { "READY_CHECK", 8960 },
+  warning = { "RAID_WARNING", 8959 },
+  click = { "IG_MAINMENU_OPTION_CHECKBOX_ON", 856 },
+}
+
+function Halo.playCue(kind)
+  local s = Halo.SOUNDS[kind]
+  if not s then return end
+  local id = (SOUNDKIT and SOUNDKIT[s[1]]) or s[2]
+  local ok, played = pcall(PlaySound, id, "Master")
+  if not ok or played == false then ns.Game.log("sound %s (%s) did not play", tostring(kind), tostring(id)) end
 end
 
 -- Draws one decision from the engine.
@@ -216,6 +279,7 @@ function Halo.render(d, demo)
 
   if db.onlyCombat and idle and db.locked and not demo then
     f:SetAlpha(0)
+    f.pulsing = false
     return
   end
   f:SetAlpha(1)
@@ -225,18 +289,19 @@ function Halo.render(d, demo)
   if f.swing then f.swing:SetAlpha(dim) end
 
   local c = Data.color[main.id] or Data.color.gold
-  f.glyph:SetTexture(Data.MEDIA .. (Data.glyph[main.id] or "glyph_attack"))
-  tint(f.glyph, c, idle and 0.7 or 1)
-  tint(f.edge, c, 0.5)
+  setIcon(f.icon, f.glyph, main.id, c)
+  pcall(f.icon.SetDesaturated, f.icon, idle)
+  f.icon:SetAlpha(idle and 0.55 or 1)
+  tint(f.edge, c, main.urgent and 1 or 0.8)
   tint(f.glow, c, main.urgent and 1 or 0.55)
-  setPulse(f, main.urgent and not idle, c)
+  f.pulsing = main.urgent and not idle
+  if f.pulsing then tint(f.pulse, c) else f.pulse:SetAlpha(0) end
 
   local stackColor = Data.color[d.stored or ""] or Data.color.gold
   for i = 1, 3 do
     if i <= (d.stacks or 0) then tint(f.stacks[i], stackColor, 1) else tint(f.stacks[i], Data.color.ink, 0.28) end
-    local level = d.mana or 3
-    if i <= level then tint(f.mana[i], Data.manaColor[level], 1) else tint(f.mana[i], Data.color.ink, 0.28) end
   end
+  Halo.updateMana(d.mana)
 
   local lines = 0
   if idle then
@@ -247,7 +312,6 @@ function Halo.render(d, demo)
     local key = demo and (demo.keys[main.id]) or Game.keyFor(main.id)
     f.key:SetText(key or "")
     f.name:SetText((main.id == "attack") and "Attack" or Game.name(main.id))
-    -- seal names in a light tint of the seal's colour: readable on any ground
     f.name:SetTextColor(0.5 + c[1] * 0.5, 0.5 + c[2] * 0.5, 0.5 + c[3] * 0.5)
     local why = db.showWhy and main.why or ""
     f.why:SetText(why)
@@ -256,7 +320,7 @@ function Halo.render(d, demo)
 
   local slot = 1
   if d.next then
-    setOrb(f.orbs[slot], d.next, demo and demo.keys[d.next] or Game.keyFor(d.next), 0.7)
+    setOrb(f.orbs[slot], d.next, demo and demo.keys[d.next] or Game.keyFor(d.next), 0.75)
     slot = slot + 1
   end
   for _, id in ipairs(d.side) do
@@ -278,7 +342,7 @@ function Halo.render(d, demo)
   f.marks:SetText(table.concat(marks, "  ·  "))
   f.marks:ClearAllPoints()
   if lines == 0 then
-    f.marks:SetPoint("TOP", f, "BOTTOM", 0, -8)
+    f.marks:SetPoint("TOP", f, "BOTTOM", 0, -14)
   elseif lines == 1 then
     f.marks:SetPoint("TOP", f.name, "BOTTOM", 0, -4)
   else
@@ -288,28 +352,38 @@ function Halo.render(d, demo)
   if lines == 0 then
     f.plate:Hide()
   else
-    -- the plate hugs the text instead of spanning a fixed width
     local widest = 0
     for _, fs in ipairs({ f.name, f.why, f.marks }) do
       local w = fs.GetStringWidth and fs:GetStringWidth() or 0
       if type(w) == "number" and w > widest then widest = w end
     end
     f.plate:SetWidth(widest > 0 and (widest + 28) or SIZE * 1.75)
-    f.plate:SetHeight(10 + (idle and 0 or 22) + (lines - (idle and 0 or 1)) * 17)
+    f.plate:SetHeight(12 + (idle and 0 or 22) + (lines - (idle and 0 or 1)) * 17)
     f.plate:Show()
   end
 
-  if db.sound and main.urgent and main.id ~= f.lastUrgent and not demo then
-    pcall(PlaySound, (SOUNDKIT and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) or 856, "Master")
+  if main.urgent and main.id ~= f.lastUrgent and not demo and db.cue ~= "off" then
+    Halo.playCue(db.cue or "ready")
   end
   f.lastUrgent = main.urgent and main.id or nil
 end
 
+-- Per-frame motion: the swap pulse and the release flash.
 function Halo.animate(now)
   local f = Halo.frame
   if not f then return end
   if f.burstUntil then
     local left = f.burstUntil - now
     if left <= 0 then f.burst:SetAlpha(0); f.burstUntil = nil else f.burst:SetAlpha(left / 0.6) end
+  end
+  if f.pulsing then
+    local phase = (now % 0.7) / 0.7
+    local size = SIZE * (0.8 + 0.6 * phase)
+    f.pulseFrame:SetSize(size, size)
+    f.pulse:SetAlpha(1 - phase * phase)
+    -- the key number blinks too, so the cue is visible even at a glance
+    f.key:SetAlpha(phase < 0.5 and 1 or 0.45)
+  elseif f.key then
+    f.key:SetAlpha(1)
   end
 end

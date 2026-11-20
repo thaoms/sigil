@@ -93,6 +93,14 @@ function Engine.decide(view, settings)
   end
 
   local main = active and seals() or nil
+  -- A seal can only be cast once the global cooldown is over. If the next
+  -- swing lands before that, pulsing now would ask for the impossible:
+  -- say so, and call the swap properly once the swing has happened.
+  if main and main.urgent and seal and main.id ~= seal and view.swingRemains and view.gcdRemains
+    and view.gcdRemains > view.swingRemains + 0.05 then
+    main = call(main.id, "Swap right after this swing.", false)
+    main.late = true
+  end
   if main and afford[main.id] == false then
     main = nil
     out.broke = true

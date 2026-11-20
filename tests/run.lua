@@ -49,6 +49,18 @@ test("weave: full cycle with a 3.3 speed weapon", function()
   eq(Engine.decide(view(t, { now = 14.3 }), S).main.id, "attack")
 end)
 
+test("swap that can't beat the next swing is called for after it", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0)
+  t:swing(1, 3.3); t:swing(4.3, 3.3); t:swing(7.6, 3.3)
+  local v = view(t, { now = 10.5 })          -- next swing in 0.4s
+  v.gcdRemains = 1.2                          -- but the global cooldown has 1.2s left
+  local d = Engine.decide(v, {})
+  eq(d.main.id, "righteousness"); eq(d.main.urgent, false); eq(d.main.why, "Swap right after this swing.")
+  v = view(t, { now = 10.5 }); v.gcdRemains = 0.2
+  eq(Engine.decide(v, {}).main.urgent, true)
+end)
+
 test("even pattern: three of each seal", function()
   local t = Tracker.new()
   local S = { pattern = "even" }

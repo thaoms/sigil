@@ -8,6 +8,7 @@ local CHOICES = {
   consecration = { { "aoe", "3 or more enemies" }, { "always", "Always" }, { "never", "Never" } },
   recover = { { "seal", "Seal of Wisdom" }, { "blessing", "Blessing of Wisdom reminder" }, { "both", "Both" } },
   aura = { { "any", "Any aura" }, { "ret_aura", "Retribution Aura" }, { "devo_aura", "Devotion Aura" }, { "conc_aura", "Concentration Aura" } },
+  cue = { { "ready", "Ready check sound" }, { "warning", "Loud warning" }, { "click", "Soft click" }, { "off", "No sound" } },
   pattern = { { "burst", "3 Command, 1 Righteousness" }, { "even", "3 Command, 3 Righteousness" } },
   attackKeys = { { 1, "One key (Attack macro)" }, { 2, "Two keys (Judgement, Holy Strike)" } },
 }
@@ -25,7 +26,7 @@ local ROWS = {
   { "cycle", "aura", "Aura to keep up", "Warns when it's off or another is on." },
   { "check", "hojCue", "Hammer of Justice mark", "Shown just before Judgement is ready." },
   { "check", "hojInMacro", "Stun from the Attack key", "Adds Hammer of Justice to the macro: used whenever ready." },
-  { "check", "sound", "Swap sound", "A soft click when it's time to swap seals." },
+  { "cycle", "cue", "Swap sound", "Click to hear each one." },
   { "check", "minimap", "Minimap button", "Left-click opens this window." },
   { "check", "hideErrors", "Hide red error text", "Hides ALL red error messages, e.g. \"not ready yet\"." },
 }
@@ -41,6 +42,7 @@ function Options.apply(key)
   local db = ns.db
   if key == "locked" or key == "scale" then ns.Halo.applyLayout() end
   if key == "minimap" then ns.MinimapButton.apply() end
+  if key == "cue" and db.cue ~= "off" then ns.Halo.playCue(db.cue) end
   if key == "hideErrors" and UIErrorsFrame then
     if db.hideErrors then pcall(UIErrorsFrame.UnregisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE")
     else pcall(UIErrorsFrame.RegisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE") end

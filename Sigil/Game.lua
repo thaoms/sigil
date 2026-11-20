@@ -84,6 +84,14 @@ function Game.scanSpells()
   Game.buildProbes()
 end
 
+-- The game's own icon for one of Sigil's calls.
+function Game.icon(id)
+  if id == "idle" or id == "attack" then id = Game.known.holy_strike and "holy_strike" or "judgement" end
+  local spell = Game.known[id]
+  if not spell then return nil end
+  return plain(try(C_Spell.GetSpellTexture, spell))
+end
+
 function Game.name(key)
   local id = Game.known[key]
   return id and plain(try(C_Spell.GetSpellName, id)) or Data.label[key]
@@ -715,12 +723,79 @@ local function calibrate(now)
   end
 end
 
+---------------------------------------------------------------------------
+-- The game's Cooldown Manager. Its buttons carry one readable bit per
+-- tracked buff: up or down. For now Sigil only watches it and records how
+-- often it agrees with Sigil's own count; nothing is corrected from it yet.
+---------------------------------------------------------------------------
+
+local CDM_VIEWERS = { "EssentialCooldownViewer", "UtilityCooldownViewer", "BuffIconCooldownViewer", "BuffBarCooldownViewer" }
+local CDM_IDS = { [200341] = "echo", [200342] = "echo", [200339] = "seal", [200340] = "seal" }
+Game.cdm = { polls = 0, found = {}, echoAgree = 0, echoDown = 0, echoUp = 0, sealAgree = 0, sealDown = 0, sealUp = 0 }
+
+-- Returns { echo = true/false/nil, seal = true/false/nil }; nil means not shown.
+function Game.readCooldownManager()
+  local state = {}
+  for _, name in ipairs(CDM_VIEWERS) do
+    local viewer = _G[name]
+    if viewer and viewer.GetChildren then
+      pcall(function()
+        local kids = { viewer:GetChildren() }
+        for _, item in ipairs(kids) do
+          local id = plain(rawget(item, "cooldownID"))
+          local what = id and CDM_IDS[id]
+          if what then
+            local instance = rawget(item, "auraInstanceID")
+            local up = issecret(instance) or instance ~= nil
+            Game.cdm.found[id] = name
+            if up then state[what] = true elseif state[what] == nil then state[what] = false end
+          end
+        end
+      end)
+    end
+  end
+  return state
+end
+
+local function watchCooldownManager(now)
+  local c = Game.cdm
+  if c.at and now - c.at < 0.25 then return end
+  c.at = now
+  local state = Game.readCooldownManager()
+  c.polls = c.polls + 1
+  if not Game.inCombat then return end
+  local t = Game.tracker
+  -- give the game a moment to light the button after a change
+  local settled = not Game.swingAt or now - Game.swingAt > 0.8
+  if state.echo ~= nil and settled then
+    local mine = t.stacks > 0
+    if mine == state.echo then c.echoAgree = c.echoAgree + 1
+    elseif mine then c.echoDown = c.echoDown + 1
+    else c.echoUp = c.echoUp + 1 end
+    if mine ~= state.echo and c.lastEcho ~= state.echo then
+      Game.log("cooldown manager: stacks shown %s, counted x%d", state.echo and "up" or "down", t.stacks)
+    end
+    c.lastEcho = state.echo
+  end
+  if state.seal ~= nil then
+    local mine = t.seal ~= nil
+    if mine == state.seal then c.sealAgree = c.sealAgree + 1
+    elseif mine then c.sealDown = c.sealDown + 1
+    else c.sealUp = c.sealUp + 1 end
+  end
+end
+
 -- One picture of the fight for the engine.
 function Game.view()
   local now = GetTime()
   local t = Game.tracker
   calibrate(now)
+  watchCooldownManager(now)
   local v = t:snapshot(now)
+  -- the game's own "global cooldown running" flag beats Sigil's timer
+  local gcd = field(try(C_Spell.GetSpellCooldown, Data.GCD_SPELL), "isActive")
+  if gcd == false then v.gcdRemains = 0
+  elseif gcd == true and v.gcdRemains == 0 then v.gcdRemains = 0.3 end
   v.now = now
   v.combat = Game.inCombat
   v.target = plain(try(UnitExists, "target")) == true and plain(try(UnitCanAttack, "player", "target")) == true
@@ -815,6 +890,12 @@ function Game.report()
   add("stats: fights %s swings %s misses %s judgements %s holy strikes %s compared %s drifted %s", tostring(s.fights), tostring(s.swings),
     tostring(s.misses), tostring(s.judgement), tostring(s.holy_strike), tostring(s.compared), tostring(s.drifted))
   for name, cd in pairs(Game.tracker.cooldowns) do add("cooldown %s %.1f", name, cd) end
+  local c = Game.cdm
+  local shown = {}
+  for id, where in pairs(c.found) do shown[#shown + 1] = id .. " in " .. where end
+  add("cooldown manager: %s", #shown > 0 and table.concat(shown, ", ") or "no Sigil-relevant buttons found")
+  add("cooldown manager stacks: agree %d, shows down while counted %d, shows up while none counted %d", c.echoAgree, c.echoDown, c.echoUp)
+  add("cooldown manager seal: agree %d, shows down while counted %d, shows up while none counted %d", c.sealAgree, c.sealDown, c.sealUp)
   local both, single = Game.compareLines()
   for _, line in ipairs(both) do add("kill time %s", line) end
   for _, line in ipairs(single) do add("kill time %s", line) end
