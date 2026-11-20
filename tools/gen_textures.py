@@ -68,8 +68,8 @@ def textures():
     # pre-rendered per position so nothing has to be rotated in game
     for i, (a0, a1) in enumerate([(8, 112), (128, 232), (248, 352)], 1):
         t[f"stack{i}"] = svg(stroke(arc(86, a0, a1), 7))
-    t["pulse"] = svg('<circle cx="110" cy="110" r="98" fill="none" stroke="#fff" stroke-width="11"/>'
-                     '<circle cx="110" cy="110" r="98" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="22"/>')
+    t["pulse"] = svg('<circle cx="110" cy="110" r="100" fill="none" stroke="#fff" stroke-width="6"/>'
+                     '<circle cx="110" cy="110" r="100" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="14"/>')
     t["burst"] = svg('<circle cx="110" cy="110" r="86" fill="none" stroke="#fff" stroke-width="6"/>')
     t["glow"] = svg(
         '<defs><radialGradient id="g" cx="50%" cy="50%" r="50%">'

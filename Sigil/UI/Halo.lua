@@ -378,10 +378,10 @@ function Halo.animate(now)
     if left <= 0 then f.burst:SetAlpha(0); f.burstUntil = nil else f.burst:SetAlpha(left / 0.6) end
   end
   if f.pulsing then
-    local phase = (now % 0.7) / 0.7
-    local size = SIZE * (0.8 + 0.6 * phase)
+    local phase = (now % 0.9) / 0.9
+    local size = SIZE * (0.9 + 0.35 * phase)
     f.pulseFrame:SetSize(size, size)
-    f.pulse:SetAlpha(1 - phase * phase)
+    f.pulse:SetAlpha(0.7 * (1 - phase * phase))
     -- the key number blinks too, so the cue is visible even at a glance
     f.key:SetAlpha(phase < 0.5 and 1 or 0.45)
   elseif f.key then
