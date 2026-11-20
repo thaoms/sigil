@@ -133,12 +133,10 @@ function Engine.decide(view, settings)
     if view.auraMissing then out.marks.aura = true end
     if view.blessingMissing then out.marks.blessing = true end
   end
-  if not view.combat and level < COMFORTABLE then
-    out.marks.drink = true
-    if level == EMPTY and settings.recover ~= "seal" then out.marks.blessingOfWisdom = true end
-  elseif level == EMPTY and settings.recover ~= "seal" and settings.recover ~= nil then
-    out.marks.blessingOfWisdom = true
-  end
+  -- Without Seal of Wisdom the blessing is the only way to recover in a fight.
+  local wantBlessing = level == EMPTY and (not useWisdom or settings.recover == "both")
+  if not view.combat and level < COMFORTABLE then out.marks.drink = true end
+  if wantBlessing then out.marks.blessingOfWisdom = true end
 
   return out
 end

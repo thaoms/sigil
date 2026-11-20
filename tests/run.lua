@@ -111,6 +111,13 @@ test("nearly empty: seal of wisdom, then back", function()
   eq(Engine.decide(view(t, { now = 1, manaLevel = 1 }), { recover = "blessing" }).marks.blessingOfWisdom, true)
 end)
 
+test("no Seal of Wisdom learned: blessing reminder when nearly empty", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0)
+  local d = Engine.decide(view(t, { now = 1, manaLevel = 1, known = { command = true, righteousness = true } }), {})
+  eq(d.main.id, "attack"); eq(d.marks.blessingOfWisdom, true)
+end)
+
 test("cannot afford the seal: keep attacking", function()
   local t = Tracker.new()
   local d = Engine.decide(view(t, { now = 0, afford = { command = false } }), {})
