@@ -15,7 +15,7 @@ local ROWS = {
   { "check", "showWhy", "Show the reason line", "A short line under the halo saying why." },
   { "check", "onlyCombat", "Only when fighting", "Hide the halo when you have no target." },
   { "check", "weave", "Swap seals for Unsealed Wrath", "Turn off to stay on one seal." },
-  { "cycle", "attackKeys", "Attack keys", "Pick two if one press only fires Judgement." },
+  { "cycle", "attackKeys", "Attack keys", "Use two if the macro misfires." },
   { "cycle", "consecration", "Consecration", "When Sigil marks it." },
   { "cycle", "recover", "When mana runs low", "How Sigil helps you recover." },
   { "check", "upkeep", "Aura and blessing reminders", "Shown only when one is missing." },
