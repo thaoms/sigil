@@ -1,16 +1,42 @@
 # Sigil
 
-A next-ability helper addon for Retribution Paladins in World of Warcraft: Forever.
+A next-ability helper for Retribution Paladins in World of Warcraft: Forever.
 
-Sigil shows the next ability to press, your Unsealed Wrath stacks and your swing timer in a single halo. It never presses anything for you.
+Sigil shows which seal to press and when, your Unsealed Wrath stacks, your swing timer and a rough mana level, all in one halo. It never presses anything for you.
 
 ## Status
 
-Design stage. No addon code yet.
+Version 0.1.0. Tested against a simulated game client only. Not yet verified in the live game.
 
-- `docs/design.html`: the design draft (live preview, priority list, action bar layout, Attack macro).
+## Install
 
-## Target
+```sh
+tools/install.sh
+```
 
-- Game: WoW Forever 1.60.1 (`## Interface: 16001`, AddOns folder under `_forever_`)
-- Build: 31-point Retribution with Unsealed Wrath, Seal of Command and Seal of Righteousness weave
+This copies `Sigil/` into `_forever_/Interface/AddOns`. Restart the game the first time. After later updates, `/reload` is enough.
+
+## In game
+
+- A setup window opens on first login. It lists Sigil's buttons, shows which key each is on, and can place the missing ones into empty bar slots.
+- `/sigil` opens options. `/sigil setup` reopens setup.
+- `/sigil demo` plays every halo state outside combat.
+- `/sigil check` saves a report of which game readings work. `/reload` writes it to disk.
+
+## How it works
+
+The game hides buffs, mana and cooldown times from addons during combat. Sigil counts the seal and stacks from your own casts and swings, estimates mana from which spells you can afford, and compares its count with the real buffs after every fight.
+
+- `Sigil/Core/` is pure Lua with no game calls: the decision engine, the tracker and the mana estimate.
+- `Sigil/Game.lua` is the only file that reads from the game.
+- `Sigil/UI/` draws the halo, setup and options.
+
+## Develop
+
+```sh
+luajit tests/run.lua    # engine tests
+luajit tests/mock.lua   # whole addon against a fake client; add -v for the report
+python3 tools/gen_textures.py   # rebuild artwork (needs rsvg-convert)
+```
+
+Design: `docs/design.html`.

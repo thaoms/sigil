@@ -60,8 +60,11 @@ def textures():
     t["ring_track"] = svg('<circle cx="110" cy="110" r="100" fill="none" stroke="#fff" stroke-width="2.5"/>')
     t["ring_fill"] = svg('<circle cx="110" cy="110" r="100" fill="none" stroke="#fff" stroke-width="3.2"/>')
     t["notch"] = svg('<path d="M110 8 L104.5 1 H115.5 Z" fill="#fff"/>')
-    t["stack"] = svg(stroke(arc(86, -52, 52), 7))            # one third, centred on top
-    t["mana"] = svg(stroke(arc(107, 171.5, 188.5), 3.5))      # one mark, centred on bottom
+    # pre-rendered per position so nothing has to be rotated in game
+    for i, (a0, a1) in enumerate([(8, 112), (128, 232), (248, 352)], 1):
+        t[f"stack{i}"] = svg(stroke(arc(86, a0, a1), 7))
+    for i, (a0, a1) in enumerate([(193, 210), (171.5, 188.5), (150, 167)], 1):
+        t[f"mana{i}"] = svg(stroke(arc(107, a0, a1), 3.5))
     t["pulse"] = svg('<circle cx="110" cy="110" r="78" fill="none" stroke="#fff" stroke-width="3"/>')
     t["burst"] = svg('<circle cx="110" cy="110" r="86" fill="none" stroke="#fff" stroke-width="6"/>')
     t["glow"] = svg(
@@ -109,10 +112,10 @@ def read_png(path):
 
 
 def write_tga(path, w, h, rows, white):
-    """Uncompressed 32-bit TGA, top-left origin, straight alpha."""
-    header = struct.pack("<BBBHHBHHHHBB", 0, 0, 2, 0, 0, 0, 0, 0, w, h, 32, 0x28)
+    """Uncompressed 32-bit TGA, bottom-left origin (the classic layout), straight alpha."""
+    header = struct.pack("<BBBHHBHHHHBB", 0, 0, 2, 0, 0, 0, 0, 0, w, h, 32, 0x08)
     out = bytearray(header)
-    for line in rows:
+    for line in reversed(rows):
         for x in range(w):
             r, g, b, a = line[x * 4:x * 4 + 4]
             if white:               # keep edges clean: full white, alpha carries the shape

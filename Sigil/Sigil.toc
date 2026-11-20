@@ -1,0 +1,19 @@
+## Interface: 16001
+## Title: Sigil
+## Notes: Shows a Retribution Paladin which seal to press and when. It never presses anything for you.
+## Author: Thomas
+## Version: 0.1.0
+## Category: Combat
+## IconTexture: Interface\AddOns\Sigil\Media\glyph_command
+## SavedVariables: SigilDB
+## SavedVariablesPerCharacter: SigilCharDB
+
+Core\Tracker.lua
+Core\Mana.lua
+Core\Engine.lua
+Data.lua
+Game.lua
+UI\Halo.lua
+UI\Setup.lua
+UI\Options.lua
+Sigil.lua
