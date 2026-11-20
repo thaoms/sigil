@@ -199,26 +199,6 @@ function Halo.create()
   f.orbs[2]:SetPoint("TOP", f.orbs[1], "BOTTOM", 0, -16)
   f.orbs[3]:SetPoint("TOP", f.orbs[2], "BOTTOM", 0, -16)
 
-  -- the game's own stack count, copied from the Cooldown Manager button.
-  -- Sigil can't read it; it only passes the hidden value to this text.
-  -- When the Cooldown Manager tracks Unsealed Wrath, this replaces the three
-  -- arcs: the game's own count, plus a dot whenever any stacks are stored
-  -- (the game prints no number for a single stack).
-  f.real = labels:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  f.real:SetPoint("CENTER", f, "CENTER", 66 * U, 66 * U)
-  pcall(f.real.SetFont, f.real, STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 24, "THICKOUTLINE")
-  f.real:SetTextColor(1, 1, 1)
-  f.realDot = labels:CreateTexture(nil, "OVERLAY")
-  f.realDot:SetTexture(ROUND_MASK)
-  f.realDot:SetSize(10, 10)
-  f.realDot:SetPoint("RIGHT", f.real, "LEFT", -4, 0)
-  f.realDot:SetVertexColor(Data.color.gold[1], Data.color.gold[2], Data.color.gold[3], 1)
-  f.realDot:Hide()
-  f.realCaption = labels:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  f.realCaption:SetPoint("TOP", f.real, "BOTTOM", 0, -1)
-  pcall(f.realCaption.SetFont, f.realCaption, STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
-  f.realCaption:SetText("stacks")
-
   f.hint = labels:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   f.hint:SetPoint("BOTTOM", f, "TOP", 0, 6)
   f.hint:SetText("Drag me. Lock with /sigil lock")
@@ -291,41 +271,6 @@ function Halo.playCue(kind)
   if not ok or played == false then ns.Game.log("sound %s (%s) did not play", tostring(kind), tostring(id)) end
 end
 
--- Shows the game's own stack count, copied without reading it. Returns true
--- when it is showing, so the arcs (Sigil's own estimate) can step aside.
--- If the game ever refuses the hidden value, it falls back to the arcs.
-local function hideReal(f)
-  f.real:SetText("")
-  f.realDot:Hide()
-  f.realCaption:Hide()
-end
-
-function Halo.updateRealStacks()
-  local f, Game = Halo.frame, ns.Game
-  if not f or not f.real then return false end
-  local source = Game.stackText
-  if not ns.db.realStacks or f.realBroken or not source then
-    hideReal(f)
-    return false
-  end
-  if not Game.stackUp then
-    f.real:SetText("0")
-    f.realDot:Hide()
-    f.realCaption:Show()
-    return true
-  end
-  local ok = pcall(function() f.real:SetText(source:GetText()) end)
-  if not ok then
-    f.realBroken = true
-    hideReal(f)
-    Game.log("error: the game refused to show its stack count; back to Sigil's own arcs")
-    return false
-  end
-  f.realDot:Show()
-  f.realCaption:Show()
-  return true
-end
-
 -- Draws one decision from the engine.
 function Halo.render(d, demo)
   local f, db, Game = Halo.frame, ns.db, ns.Game
@@ -353,13 +298,15 @@ function Halo.render(d, demo)
   f.pulsing = main.urgent and not idle
   if f.pulsing then tint(f.pulse, c) else f.pulse:SetAlpha(0) end
 
+  -- Stacks: arcs the game fills itself from the real buff (UI/Native.lua),
+  -- with Sigil's own arcs underneath as the empty track. Without them,
+  -- Sigil's arcs show its own count.
   local stackColor = Data.color[d.stored or ""] or Data.color.gold
-  local real = (not demo) and Halo.updateRealStacks()
-  if demo then hideReal(f) end
+  local native = ns.Native and ns.Native.show(not demo) or false
   for i = 1, 3 do
-    if real then f.stacks[i]:SetAlpha(0)
-    elseif i <= (d.stacks or 0) then f.stacks[i]:SetAlpha(1); tint(f.stacks[i], stackColor, 1)
-    else f.stacks[i]:SetAlpha(1); tint(f.stacks[i], Data.color.ink, 0.28) end
+    f.stacks[i]:SetAlpha(1)
+    if native or i > (d.stacks or 0) then tint(f.stacks[i], Data.color.ink, 0.28)
+    else tint(f.stacks[i], stackColor, 1) end
   end
   Halo.updateMana(d.mana)
 

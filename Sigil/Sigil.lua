@@ -184,6 +184,7 @@ boot:SetScript("OnEvent", function(_, event, name)
   local ok, err = pcall(function()
     ns.Game.start()
     ns.Halo.create()
+    if ns.Native then pcall(ns.Native.build) end
     ns.onSwing = ns.Halo.swing
     ns.onRelease = ns.Halo.release
     ns.Options.register()

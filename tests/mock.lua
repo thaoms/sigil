@@ -315,14 +315,11 @@ expect("a secret instance id reads as up", ns.Game.readCooldownManager().echo, t
 local stackFs = widget("FontString"); stackFs.text = SECRET
 echoItem.Applications = setmetatable({ Applications = stackFs }, { __index = function() return nil end })
 tick(0.6)
-expect("the hidden stack count is handed to the halo unread", ns.Halo.frame.real.text, SECRET)
-expect("the arcs step aside for the game's count", ns.Halo.frame.stacks[1].alpha, 0)
-expect("a dot shows that stacks are stored", ns.Halo.frame.realDot.shown, true)
+expect("the button's stack number is left alone", ns.Halo.frame.real, nil)
+expect("the arcs keep showing", ns.Halo.frame.stacks[1].alpha, 1)
 echoItem.auraInstanceID = nil; tick(0.6)
-expect("no stacks shows 0", ns.Halo.frame.real.text, "0")
+expect("no stacks reads as down", ns.Game.readCooldownManager().echo, false)
 echoItem.auraInstanceID = SECRET; tick(0.6)
-stackFs.text = "3"; tick(0.6)
-expect("the halo shows whatever the game shows", ns.Halo.frame.real.text, "3")
 -- the Cooldown Manager says stacks exist while Sigil counts none
 ns.Game.tracker.stacks, ns.Game.tracker.stored = 0, nil
 fire("PLAYER_SWING", 3.3, 0); ns.Game.tracker.stacks, ns.Game.tracker.stored = 0, nil
@@ -338,7 +335,6 @@ local fixes = ns.Game.cdm.fixes
 fire("UNIT_SPELLCAST_SUCCEEDED", "player", "guid", 20424); tick(0.1)
 expect("only one correction per swing", ns.Game.cdm.fixes, fixes)
 echoItem.Applications = nil; tick(0.6)
-expect("without the game's count the arcs come back", ns.Halo.frame.stacks[1].alpha, 1)
 cast(20915); tick(0.2)
 world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 
@@ -362,8 +358,84 @@ fire("PLAYER_DEAD"); tick(0.1)
 expect("death clears the seal", ns.Game.tracker.seal, nil)
 expect("death clears the stacks", ns.Game.tracker.stacks, 0)
 
+-- game-drawn stacks: the game's aura display fills the arcs itself
+expect("without the aura display nothing is built", ns.Native.ready, false)
+local containers = {}
+local plainCreateFrame = CreateFrame
+CreateFrame = function(kind, name, parent, template)
+  local f = plainCreateFrame(kind, name)
+  if kind == "AuraContainer" then
+    containers[#containers + 1] = f
+    f.template = template
+    function f:SetUnit(u) self.unit = u end
+    function f:AddAuraSlot(slot, filter, opts) self.slot = { name = slot, filter = filter, opts = opts } end
+  end
+  return f
+end
+CustomAuraContainerAuraProcessingPolicy, C_AuraContainerUtil = { None = 0 }, {}
+local function gameButton(refuseLowerBound)
+  local b = widget("Button")
+  function b:SetApplicationBar(bar, o)
+    if refuseLowerBound and o.minApplications then error("unknown option minApplications") end
+    self.bar, self.range = bar, o
+  end
+  return b
+end
+world.combat = true
+ns.Native.build()
+expect("not built in combat", ns.Native.ready, false)
+expect("waits for combat to end", #containers, 0)
+world.combat = false; fire("PLAYER_REGEN_ENABLED")
+expect("built when combat ends", ns.Native.ready, true)
+local echoes = 0
+for _ in pairs(ns.Data.echo) do echoes = echoes + 1 end
+expect("three arcs for every seal's Echo", #containers, echoes * 3)
+local perEcho, ranges, wrongSlot = {}, {}, 0
+for _, c in ipairs(containers) do
+  local ids = c.slot.opts.candidateFilters.includeSpellIDs
+  local n, id = 0, nil
+  for k in pairs(ids) do n, id = n + 1, k end
+  if n ~= 1 or c.unit ~= "player" or c.slot.filter ~= "HELPFUL" or c.template ~= "CustomAuraContainerTemplate" then wrongSlot = wrongSlot + 1 end
+  perEcho[id] = (perEcho[id] or 0) + 1
+  local b = gameButton()
+  c.slot.opts.initializeFrame(b)
+  ranges[#ranges + 1] = b.range.minApplications .. "-" .. b.range.maxApplications
+end
+expect("each arc follows one of your Echo buffs", wrongSlot, 0)
+local evenly = true
+for _, id in pairs(ns.Data.echo) do if perEcho[id] ~= 3 then evenly = false end end
+expect("every Echo buff gets exactly three arcs", evenly, true)
+local seen = {}
+for _, r in ipairs(ranges) do seen[r] = (seen[r] or 0) + 1 end
+expect("arc 1 covers 0 to 1 stacks", seen["0-1"], echoes)
+expect("arc 2 covers 1 to 2 stacks", seen["1-2"], echoes)
+expect("arc 3 covers 2 to 3 stacks", seen["2-3"], echoes)
+tick(0.6)
+expect("the game-drawn arcs show", ns.Native.wrap.alpha, 1)
+expect("Sigil's arcs stay as the empty track", ns.Halo.frame.stacks[3].alpha, 1)
+SlashCmdList.SIGIL("demo"); tick(1)
+expect("the demo hides the real arcs", ns.Native.wrap.alpha, 0)
+SlashCmdList.SIGIL("demo"); tick(0.6)
+expect("they come back after the demo", ns.Native.wrap.alpha, 1)
+ns.db.realStacks = false; tick(0.6)
+expect("the option turns them off", ns.Native.wrap.alpha, 0)
+ns.db.realStacks = true; tick(0.6)
+-- a client that refuses the lower bound would fill arcs part way: give up instead
+containers[1].slot.opts.initializeFrame(gameButton(true))
+tick(0.6)
+expect("a refused range turns them off", ns.Native.wrap.alpha, 0)
+expect("and says why", ns.Native.status:find("refused") ~= nil, true)
+expect("Sigil's own arcs take over", ns.Halo.frame.stacks[1].alpha, 1)
+for i = #SigilCharDB.log, 1, -1 do   -- that error was on purpose
+  if SigilCharDB.log[i]:find("refused the arc range") then table.remove(SigilCharDB.log, i) end
+end
+CreateFrame = plainCreateFrame
+
 -- commands
 SlashCmdList.SIGIL("check")
+local reported = false
+for _, l in ipairs(SigilDB.report.lines) do if l:find("game%-drawn stacks: ") then reported = true end end
+expect("the check report says how the stacks are shown", reported, true)
 expect("report saved", type(SigilDB.report.lines), "table")
 SlashCmdList.SIGIL("demo"); tick(12); SlashCmdList.SIGIL("demo")
 ns.Setup.show(); SlashCmdList.SIGIL("")

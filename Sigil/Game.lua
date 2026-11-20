@@ -818,11 +818,6 @@ local CDM_IDS = { [200341] = "echo", [200342] = "echo", [200339] = "seal", [2003
 Game.cdm = { polls = 0, found = {}, echoAgree = 0, echoDown = 0, echoUp = 0, sealAgree = 0, sealDown = 0, sealUp = 0 }
 
 -- Returns { echo = true/false/nil, seal = true/false/nil }; nil means not shown.
--- The stack number printed on the Cooldown Manager's Unsealed Wrath button
--- (its Applications.Applications text). Live tests showed the game hides it
--- from addons in combat, so Sigil never reads it. The halo only hands the
--- hidden value to its own text, which the game allows, so you see the real count.
-
 function Game.readCooldownManager()
   local state = {}
   for _, name in ipairs(CDM_VIEWERS) do
@@ -838,12 +833,6 @@ function Game.readCooldownManager()
             local up = issecret(instance) or instance ~= nil
             Game.cdm.found[id] = name
             if up then state[what] = true elseif state[what] == nil then state[what] = false end
-            if what == "echo" then
-              local apps = rawget(item, "Applications")
-              local fs = apps and rawget(apps, "Applications")
-              if fs and fs.GetText then state.echoText = fs end
-              state.echoUp = up
-            end
           end
         end
       end)
@@ -857,7 +846,6 @@ local function watchCooldownManager(now)
   if c.at and now - c.at < 0.25 then return end
   c.at = now
   local state = Game.readCooldownManager()
-  Game.stackText, Game.stackUp = state.echoText, state.echoUp
   c.polls = c.polls + 1
   if not Game.inCombat then return end
   local t = Game.tracker
@@ -1033,6 +1021,7 @@ function Game.report()
   add("cooldown manager stacks: agree %d, shows down while counted %d, shows up while none counted %d", c.echoAgree, c.echoDown, c.echoUp)
   add("cooldown manager seal: agree %d, shows down while counted %d, shows up while none counted %d", c.sealAgree, c.sealDown, c.sealUp)
   add("cooldown manager corrections made: %d", c.fixes or 0)
+  if ns.Native then add("game-drawn stacks: %s", ns.Native.status) end
   local both, single = Game.compareLines()
   for _, line in ipairs(both) do add("kill time %s", line) end
   for _, line in ipairs(single) do add("kill time %s", line) end

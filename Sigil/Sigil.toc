@@ -17,6 +17,7 @@ Core\Engine.lua
 Data.lua
 Game.lua
 UI\Halo.lua
+UI\Native.lua
 UI\Setup.lua
 UI\Options.lua
 UI\Minimap.lua
