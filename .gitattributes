@@ -1,0 +1,8 @@
+# Keep LF line endings on every platform. The mock test reads Sigil.toc line by
+# line, and a CRLF checkout (Git for Windows' default) leaves a stray \r that
+# stops any addon file from loading.
+* text=auto eol=lf
+
+*.tga binary
+*.png binary
+*.jpg binary
