@@ -821,6 +821,64 @@ local function stackText(item)
   return nil
 end
 
+-- Describes how the Cooldown Manager's stack button is built, so the stack
+-- number can be found. Out of combat only, read only.
+local function describeFrame(frame, depth, out, prefix)
+  if depth > 3 or #out > 120 then return end
+  local okType, kind = pcall(frame.GetObjectType, frame)
+  local okName, name = pcall(frame.GetName, frame)
+  out[#out + 1] = ("%s[%s] %s"):format(prefix, okType and tostring(kind) or "?", okName and tostring(name) or "")
+  -- named fields on the frame's table
+  pcall(function()
+    for key, value in pairs(frame) do
+      if type(key) == "string" and type(value) == "table" and value.GetObjectType then
+        local okT, t = pcall(value.GetObjectType, value)
+        local text = ""
+        if okT and t == "FontString" then
+          local okX, x = pcall(value.GetText, value)
+          text = okX and (issecret(x) and " text=SECRET" or (" text='" .. tostring(x) .. "'")) or " text=ERR"
+        end
+        out[#out + 1] = ("%s  .%s -> %s%s"):format(prefix, key, okT and tostring(t) or "?", text)
+      end
+    end
+  end)
+  pcall(function()
+    for i, region in ipairs({ frame:GetRegions() }) do
+      local okT, t = pcall(region.GetObjectType, region)
+      if okT and t == "FontString" then
+        local okX, x = pcall(region.GetText, region)
+        out[#out + 1] = ("%s  region %d FontString text=%s"):format(prefix, i, okX and (issecret(x) and "SECRET" or ("'" .. tostring(x) .. "'")) or "ERR")
+      end
+    end
+  end)
+  pcall(function()
+    for i, child in ipairs({ frame:GetChildren() }) do
+      describeFrame(child, depth + 1, out, prefix .. "  child" .. i .. " ")
+    end
+  end)
+end
+
+function Game.describeStackButton()
+  if Game.inCombat then return nil end
+  local out = {}
+  for _, name in ipairs(CDM_VIEWERS) do
+    local viewer = _G[name]
+    if viewer and viewer.GetChildren then
+      pcall(function()
+        for _, item in ipairs({ viewer:GetChildren() }) do
+          local id = plain(rawget(item, "cooldownID"))
+          if id and CDM_IDS[id] then
+            local instance = rawget(item, "auraInstanceID")
+            out[#out + 1] = ("== %s cooldownID %d (%s) up=%s"):format(name, id, CDM_IDS[id], tostring(issecret(instance) or instance ~= nil))
+            describeFrame(item, 0, out, "")
+          end
+        end
+      end)
+    end
+  end
+  return out
+end
+
 function Game.readCooldownManager()
   local state = {}
   for _, name in ipairs(CDM_VIEWERS) do

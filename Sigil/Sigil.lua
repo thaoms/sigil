@@ -73,6 +73,7 @@ end
 local function check()
   local lines = ns.Game.report()
   SigilDB.report = { at = date and date("%Y-%m-%d %H:%M:%S") or "?", lines = lines }
+  SigilDB.stackButton = ns.Game.describeStackButton()
   for _, line in ipairs(lines) do print("|cff8d95a4" .. line .. "|r") end
   ns.say("Report saved. Type /reload so it is written to disk.")
 end

@@ -315,6 +315,10 @@ expect("readable stack number that matches is counted", (ns.Game.cdm.textMatch o
 stackFs.text = "3"; ns.Game.tracker.stacks = 1; tick(1.0)
 expect("readable stack number that differs is counted", (ns.Game.cdm.textMiss or 0) > 0, true)
 echoItem.Applications = nil
+world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
+local dump = ns.Game.describeStackButton()
+expect("stack button can be described out of combat", dump and #dump > 0, true)
+world.combat = true; fire("PLAYER_REGEN_DISABLED"); tick(0.2)
 cast(20915); fire("PLAYER_SWING", 3.3, 0); tick(1.2)
 expect("stacks kept while the button shows them", ns.Game.tracker.stacks > 0, true)
 local fixesBefore = ns.Game.cdm.fixes or 0
