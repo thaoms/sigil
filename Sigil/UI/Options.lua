@@ -8,6 +8,7 @@ local CHOICES = {
   consecration = { { "aoe", "3 or more enemies" }, { "always", "Always" }, { "never", "Never" } },
   recover = { { "seal", "Seal of Wisdom" }, { "blessing", "Blessing of Wisdom reminder" }, { "both", "Both" } },
   aura = { { "any", "Any aura" }, { "ret_aura", "Retribution Aura" }, { "devo_aura", "Devotion Aura" }, { "conc_aura", "Concentration Aura" } },
+  pattern = { { "burst", "3 Command, 1 Righteousness" }, { "even", "3 Command, 3 Righteousness" } },
   attackKeys = { { 1, "One key (Attack macro)" }, { 2, "Two keys (Judgement, Holy Strike)" } },
 }
 
@@ -16,6 +17,7 @@ local ROWS = {
   { "check", "showWhy", "Show the reason line", "A short line under the halo saying why." },
   { "check", "onlyCombat", "Only when fighting", "Hide the halo when you have no target." },
   { "check", "weave", "Swap seals for Unsealed Wrath", "Turn off to stay on one seal." },
+  { "cycle", "pattern", "Seal pattern", "3 and 3 costs less mana." },
   { "cycle", "attackKeys", "Attack keys", "Use two if the macro misfires." },
   { "cycle", "consecration", "Consecration", "When Sigil marks it." },
   { "cycle", "recover", "When mana runs low", "How Sigil helps you recover." },

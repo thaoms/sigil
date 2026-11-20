@@ -81,6 +81,14 @@ function Engine.decide(view, settings)
     if level ~= COMFORTABLE then
       return call(primary, "Mana is getting low. Stay on your main seal.", false)
     end
+    if settings.pattern == "even" then
+      -- build three copies of the second seal too: fewer seal casts
+      if stored == secondary and stacks >= 3 then
+        return call(primary, "3 stacks stored. Swap before your next swing.", true)
+      end
+      if expiring then return call(secondary, "Your seal is about to run out.", false) end
+      return nil
+    end
     return call(primary, "Stacks released. Swap back and rebuild.", true)
   end
 
@@ -100,8 +108,8 @@ function Engine.decide(view, settings)
       why = "Not enough mana for a seal. Keep attacking."
     elseif weave and seal == secondary and stored == primary and stacks > 0 then
       why = "Your next swing releases the stacks."
-    elseif weave and seal == primary and level == COMFORTABLE then
-      why = ("Building stacks: %d of 3."):format(stored == primary and stacks or 0)
+    elseif weave and level == COMFORTABLE and (seal == primary or (seal == secondary and settings.pattern == "even")) then
+      why = ("Building stacks: %d of 3."):format(stored == seal and stacks or 0)
     elseif level == EMPTY and seal == "wisdom" then
       why = "Recovering mana."
     end
@@ -112,6 +120,8 @@ function Engine.decide(view, settings)
   if weave and level == COMFORTABLE and active then
     if out.main.id == "attack" and seal == primary and stored == primary and stacks == 2 then
       out.next = secondary
+    elseif settings.pattern == "even" then
+      if out.main.id == "attack" and seal == secondary and stored == secondary and stacks == 2 then out.next = primary end
     elseif out.main.id == secondary or (out.main.id == "attack" and seal == secondary) then
       out.next = primary
     end
