@@ -131,6 +131,7 @@ function Engine.decide(view, settings)
 
   if settings.upkeep ~= false then
     if view.auraMissing then out.marks.aura = true end
+    if view.auraWrong then out.marks.auraWrong = true end
     if view.blessingMissing then out.marks.blessing = true end
   end
   -- Without Seal of Wisdom the blessing is the only way to recover in a fight.

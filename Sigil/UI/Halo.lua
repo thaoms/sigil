@@ -268,7 +268,9 @@ function Halo.render(d, demo)
   for i = slot, 3 do f.orbs[i]:Hide() end
 
   local marks = {}
-  if d.marks.aura then marks[#marks + 1] = "Retribution Aura is off" end
+  local wanted = db.aura ~= "any" and Game.known[db.aura] and Game.name(db.aura) or nil
+  if d.marks.aura then marks[#marks + 1] = wanted and ("No aura: cast " .. wanted) or "No aura active" end
+  if d.marks.auraWrong and wanted then marks[#marks + 1] = "Switch to " .. wanted end
   if d.marks.blessing then marks[#marks + 1] = "No blessing" end
   if d.marks.blessingOfWisdom then marks[#marks + 1] = "Low mana: Blessing of Wisdom" end
   if d.marks.drink then marks[#marks + 1] = "Drink before the next pull" end

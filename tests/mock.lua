@@ -80,6 +80,8 @@ function UnitCreatureType() return "Beast", 1 end
 function IsInGroup() return world.inGroup end
 function InCombatLockdown() return world.combat end
 function GetShapeshiftForm() return world.form end
+function GetNumShapeshiftForms() return 3 end
+function GetShapeshiftFormInfo(i) return 1, true, true, ({ 465, 7294, 19746 })[i] end
 function GetBuildInfo() return "1.60.1", "70959", "Nov 2026", 16001 end
 function GetActionInfo(slot) local a = world.actions[slot] if a then return a[1], a[2] end end
 function GetActionText(slot) local a = world.actions[slot] return a and a[3] end
@@ -240,6 +242,14 @@ world.auras[1311703] = { applications = 2, expirationTime = clock + 9 }
 fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 expect("adopted real stacks", ns.Game.tracker.stacks, 2)
 expect("comparison counted", ns.Game.stats.compared, 1)
+
+-- aura reminders
+world.form = 0; tick(0.2)
+expect("no aura is reported", (ns.Halo.frame.marks.text or ""):find("No aura active", 1, true) ~= nil, true)
+ns.db.aura = "ret_aura"; world.form = 1; tick(0.2)
+expect("wrong aura is reported", (ns.Halo.frame.marks.text or ""):find("Switch to Retribution Aura", 1, true) ~= nil, true)
+world.form = 2; tick(0.2)
+expect("right aura: no reminder", (ns.Halo.frame.marks.text or ""):find("aura", 1, true), nil)
 
 -- commands
 SlashCmdList.SIGIL("check")

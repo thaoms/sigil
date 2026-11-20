@@ -419,13 +419,28 @@ function Game.syncBuffs()
   Game.blessingExpires = real.blessing and real.blessingExpires or nil
 end
 
-function Game.auraMissing()
-  if not Game.known.ret_aura then return nil end
+-- Paladin auras are "stances" to the game, readable even in combat.
+-- Returns "missing", "wrong" (not the aura picked in options) or nil.
+function Game.auraState()
+  local count = plain(try(GetNumShapeshiftForms))
   local form = plain(try(GetShapeshiftForm))
   if form == nil then return nil end
   if form ~= 0 then Game.formSeen = true end
-  if not Game.formSeen then return nil end     -- never seen an aura register: don't nag
-  return form == 0
+  if not Game.formSeen and not (count and count > 0) then return nil end   -- can't tell: don't nag
+  if form == 0 then return "missing" end
+  local want = ns.db and ns.db.aura
+  if not want or want == "any" or not Game.known[want] then return nil end
+  local _, _, _, spellID = try(GetShapeshiftFormInfo, form)
+  spellID = plain(spellID)
+  if not spellID then return nil end
+  local active = Data.byId[spellID]
+  if not active then
+    -- an aura rank not in the ID list: compare by name
+    local name = plain(try(C_Spell.GetSpellName, spellID))
+    if name == Game.name(want) then return nil end
+    return name and "wrong" or nil
+  end
+  return active ~= want and "wrong" or nil
 end
 
 function Game.blessingMissing(now)
@@ -676,7 +691,9 @@ function Game.view()
   v.judgementRemains = judgementReady and 0 or t:remains("judgement", now)
   if judgementReady == false and v.judgementRemains == 0 then v.judgementRemains = 99 end
   v.enemies = Game.enemies()
-  v.auraMissing = Game.auraMissing()
+  local aura = Game.auraState()
+  v.auraMissing = aura == "missing"
+  v.auraWrong = aura == "wrong"
   v.blessingMissing = Game.blessingMissing(now)
   return v
 end

@@ -22,6 +22,8 @@ Data.spells = {
   justice       = { 20164 },
   fury          = { 1311649, 1311656, 20163, 20419, 20421, 20422, 20423 },
   ret_aura      = { 7294, 10298, 10299, 10300, 10301 },
+  devo_aura     = { 465, 10290, 643, 10291, 1032, 10292, 10293 },
+  conc_aura     = { 19746 },
   might         = { 19740, 19834, 19835, 19836, 19837, 19838, 25291 },
   bow           = { 19742, 19850, 19852, 19853, 19854, 25290 },
 }
@@ -51,6 +53,7 @@ Data.label = {
   attack = "Attack", command = "Seal of Command", righteousness = "Seal of Righteousness",
   wisdom = "Seal of Wisdom", consecration = "Consecration", hoj = "Hammer of Justice",
   judgement = "Judgement", holy_strike = "Holy Strike", idle = "",
+  ret_aura = "Retribution Aura", devo_aura = "Devotion Aura", conc_aura = "Concentration Aura",
 }
 Data.glyph = {
   attack = "glyph_attack", command = "glyph_command", righteousness = "glyph_righteousness",
@@ -71,7 +74,7 @@ Data.manaColor = { { 1.00, 0.42, 0.35 }, { 1.00, 0.70, 0.28 }, { 0.53, 0.71, 1.0
 Data.defaults = {
   scale = 1, locked = false, showWhy = true, onlyCombat = false,
   consecration = "aoe", recover = "seal", upkeep = true, hojCue = true,
-  sound = true, attackKeys = 1, hojInMacro = false, hideErrors = false, weave = true,
+  sound = true, attackKeys = 1, hojInMacro = false, aura = "any", hideErrors = false, weave = true,
 }
 
 -- Action slot -> binding name.

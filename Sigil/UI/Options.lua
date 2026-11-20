@@ -7,6 +7,7 @@ ns.Options = Options
 local CHOICES = {
   consecration = { { "aoe", "3 or more enemies" }, { "always", "Always" }, { "never", "Never" } },
   recover = { { "seal", "Seal of Wisdom" }, { "blessing", "Blessing of Wisdom reminder" }, { "both", "Both" } },
+  aura = { { "any", "Any aura" }, { "ret_aura", "Retribution Aura" }, { "devo_aura", "Devotion Aura" }, { "conc_aura", "Concentration Aura" } },
   attackKeys = { { 1, "One key (Attack macro)" }, { 2, "Two keys (Judgement, Holy Strike)" } },
 }
 
@@ -19,6 +20,7 @@ local ROWS = {
   { "cycle", "consecration", "Consecration", "When Sigil marks it." },
   { "cycle", "recover", "When mana runs low", "How Sigil helps you recover." },
   { "check", "upkeep", "Aura and blessing reminders", "Shown only when one is missing." },
+  { "cycle", "aura", "Aura to keep up", "Warns when it's off or another is on." },
   { "check", "hojCue", "Hammer of Justice mark", "Shown just before Judgement is ready." },
   { "check", "hojInMacro", "Stun from the Attack key", "Adds Hammer of Justice to the macro: used whenever ready." },
   { "check", "sound", "Swap sound", "A soft click when it's time to swap seals." },
