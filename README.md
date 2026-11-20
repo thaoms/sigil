@@ -86,7 +86,9 @@ Code layout:
 tools/package.sh
 ```
 
-Writes `dist/Sigil-<version>.zip` with only the `Sigil` folder inside, ready to upload to CurseForge. The version comes from `Sigil/Sigil.toc`.
+Writes `dist/Sigil-<version>.zip` with only the `Sigil` folder inside, ready to upload to CurseForge. The version comes from `Sigil/Sigil.toc`. It runs the tests first and stops if any fail.
+
+On Windows, run it from Git Bash or WSL. Without `zip` it uses Windows' own `tar` to write the zip, and if Windows blocks `luajit.exe` it runs the tests with the LuaJIT inside WSL.
 
 ## Develop
 
