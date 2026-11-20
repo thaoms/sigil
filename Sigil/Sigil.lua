@@ -62,7 +62,7 @@ function ns.logConsecration(d)
   if shown then why = "shown"
   elseif (db.consecration or "aoe") == "never" then why = "setting is never"
   elseif not Game.known.consecration then why = "not learned"
-  elseif (d.mana or 3) < 3 then why = "mana not comfortable"
+  elseif (d.mana or 3) == 1 or ((d.mana or 3) == 2 and (Game.enemies() or 0) < 3) then why = "mana too low"
   elseif Game.ready("consecration") ~= true then why = "on cooldown"
   elseif Game.afford("consecration") == false then why = "not enough mana"
   else why = ("enemies counted %s"):format(tostring(Game.enemies())) end

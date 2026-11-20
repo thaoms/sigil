@@ -170,8 +170,12 @@ function Engine.decide(view, settings)
 
   if view.combat then
     local cons = settings.consecration or "aoe"
-    if known.consecration and ready.consecration and level == COMFORTABLE and afford.consecration ~= false
-      and (cons == "always" or (cons == "aoe" and (view.enemies or 0) >= 3)) then
+    local bigPull = (view.enemies or 0) >= 3
+    -- On a big pull Consecration stays until mana is nearly empty; otherwise
+    -- it's the first thing dropped when mana gets low.
+    local manaOk = level == COMFORTABLE or (bigPull and level > EMPTY)
+    if known.consecration and ready.consecration and manaOk and afford.consecration ~= false
+      and (cons == "always" or (cons == "aoe" and bigPull)) then
       out.side[#out.side + 1] = "consecration"
     end
     -- when the Attack key already uses the stun, there is nothing to mark
