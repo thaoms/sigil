@@ -178,9 +178,7 @@ function Engine.decide(view, settings)
       and (cons == "always" or (cons == "aoe" and bigPull)) then
       out.side[#out.side + 1] = "consecration"
     end
-    -- when the Attack key already uses the stun, there is nothing to mark
-    local stunIsAutomatic = settings.stun == "always" or (settings.stun == "solo" and not view.inGroup)
-    if settings.hojCue ~= false and not stunIsAutomatic and known.hoj and ready.hoj and seal == "command"
+    if settings.hojCue ~= false and known.hoj and ready.hoj and seal == "command"
       and (view.judgementRemains or 99) <= STUN_WINDOW and afford.hoj ~= false then
       out.side[#out.side + 1] = "hoj"
     end

@@ -10,7 +10,6 @@ local CHOICES = {
   aura = { { "any", "Any aura" }, { "ret_aura", "Retribution Aura" }, { "devo_aura", "Devotion Aura" }, { "conc_aura", "Concentration Aura" } },
   cue = { { "ready", "Ready check sound" }, { "warning", "Loud warning" }, { "click", "Soft click" }, { "off", "No sound" } },
   pattern = { { "burst", "3 Command, 1 Righteousness" }, { "even", "3 Command, 3 Righteousness" } },
-  stun = { { "off", "Manual" }, { "solo", "Automatic when solo" }, { "always", "Always automatic" } },
   primary = { { "auto", "Automatic" }, { "command", "Seal of Command" }, { "righteousness", "Seal of Righteousness" } },
   secondary = { { "auto", "Automatic" }, { "righteousness", "Seal of Righteousness" }, { "command", "Seal of Command" },
     { "wisdom", "Seal of Wisdom" }, { "light", "Seal of Light" }, { "justice", "Seal of Justice" }, { "none", "None (one seal)" } },
@@ -33,7 +32,6 @@ local ROWS = {
   { "check", "upkeep", "Aura and blessing reminders", "Shown only when one is missing." },
   { "cycle", "aura", "Aura to keep up", "Warns if it's off or wrong." },
   { "check", "hojCue", "Hammer of Justice mark", "Shown just before Judgement is ready." },
-  { "cycle", "stun", "Hammer of Justice", "Whether the Attack key stuns." },
   { "cycle", "cue", "Swap sound", "Click to hear each one." },
   { "check", "minimap", "Minimap button", "Left-click opens this window." },
   { "check", "realStacks", "Use the game's stack count", "Exact in combat. Turn off to see Sigil's own count." },
@@ -59,7 +57,7 @@ function Options.apply(key)
     else pcall(UIErrorsFrame.RegisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE") end
   end
   if key == "primary" or key == "secondary" or key == "opener" then ns.Game.scanKeys() end
-  if key == "attackKeys" or key == "stun" then
+  if key == "attackKeys" then
     if db.attackKeys ~= 2 then ns.Game.macroState = ns.Game.ensureMacro() end
     ns.Game.scanKeys()
   end

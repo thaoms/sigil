@@ -243,23 +243,18 @@ end
 
 function Game.macroBody()
   -- A fixed icon: without a name the button shows whichever spell is first
-  -- in the list, so it would turn into the stun when that is in the macro.
+  -- in the list.
   local face = Game.known.holy_strike or Game.known.judgement
   local faceName = face and plain(try(C_Spell.GetSpellName, face))
   local lines = { faceName and ("#showtooltip " .. faceName) or "#showtooltip", "/startattack" }
-  -- With the stun first, a press where both are ready stuns and then judges
-  -- the stunned target in the same instant (Judgement skips the global cooldown).
-  -- "solo" uses the macro condition [nogroup]: the stun only fires when you
-  -- are not in a party or raid, so dungeons and battlegrounds stay manual.
+  -- Hammer of Justice stays off this key: live, a /cast of it while it was on
+  -- cooldown kept the lines below it from firing (Holy Strike first, then
+  -- itself when moved below Exorcism). It is a manual key with a mark.
   local order = { "judgement", "how", "holy_strike", "exorcism" }
-  local stun = ns.db and ns.db.stun
-  if stun == "solo" or stun == "always" then table.insert(order, 1, "hoj") end
   for _, key in ipairs(order) do
     if Game.known[key] then
       local name = plain(try(C_Spell.GetSpellName, Game.known[key]))
-      if name then
-        lines[#lines + 1] = (key == "hoj" and stun == "solo") and ("/cast [nogroup] " .. name) or ("/cast " .. name)
-      end
+      if name then lines[#lines + 1] = "/cast " .. name end
     end
   end
   return table.concat(lines, "\n")

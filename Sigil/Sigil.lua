@@ -172,8 +172,8 @@ boot:SetScript("OnEvent", function(_, event, name)
     end
     while #SigilCharDB.log > 400 do table.remove(SigilCharDB.log, 1) end
     -- settings renamed since 0.2.0
-    if SigilCharDB.hojInMacro then SigilCharDB.stun = "always" end
-    SigilCharDB.hojInMacro, SigilCharDB.sound = nil, nil
+    -- the automatic stun is gone: Hammer of Justice is always a manual key
+    SigilCharDB.hojInMacro, SigilCharDB.sound, SigilCharDB.stun = nil, nil, nil
     ns.db = SigilCharDB
     return
   end

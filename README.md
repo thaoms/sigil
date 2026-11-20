@@ -21,7 +21,7 @@ Version 0.2.0-beta3, for WoW Forever 1.60.1 (`## Interface: 16001`).
 - **Mana.** A true mana bar, plus a three-level estimate that drops Consecration and the swap when low and calls Seal of Wisdom when nearly empty.
 - **Reminders.** No aura, wrong aura, no blessing, drink before the next pull.
 - **Side marks.** Consecration on packs, Hammer of Justice just before Judgement.
-- **Stun your way.** Hammer of Justice is manual by default. It can also fire from the Attack key only while solo, staying manual in groups, or always.
+- **Manual stun.** Hammer of Justice stays on its own key; a mark shows when to press it, just before Judgement.
 
 ## Install
 
@@ -77,7 +77,7 @@ Code layout:
 ## Tested
 
 - Solo, in live fights: the stack count matched the real buff in 50 consecutive fights across both patterns, and the Cooldown Manager's signal agreed with Sigil in over 2,000 checks with no disagreement.
-- Seen working live: the Crusader opener, the low-mana level with its drink reminder, the automatic stun, the game-drawn stack arcs, Seal of Wisdom at low mana, the Consecration mark on packs, and a Cooldown Manager correction in a party.
+- Seen working live: the Crusader opener, the low-mana level with its drink reminder, the game-drawn stack arcs, Seal of Wisdom at low mana, the Consecration mark on packs, and a Cooldown Manager correction in a party.
 - In a party (a few fights), the miss rule undid 3 swings that had in fact landed, so it now applies solo only.
 - Not yet seen in a live fight: dungeons and raids.
 

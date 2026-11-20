@@ -9,7 +9,7 @@ This is a beta. I built it for my own paladin and it works well for me solo, but
 - An Attack macro that Sigil makes for you. Judgement, Holy Strike, Exorcism and Hammer of Wrath on one key, so you spam that and only think about seals
 - Seal weaving for Unsealed Wrath. Command and Righteousness by default, but you can pick the pair. 3 and 3 or 3 and 1
 - Optional Seal of the Crusader opener, for every target or only elites and bosses
-- Hammer of Justice manual, automatic when solo, or always
+- A mark that tells you when to press Hammer of Justice, just before Judgement
 - When mana gets low it stops asking for the expensive stuff and calls Seal of Wisdom
 - Reminders when your aura or blessing is missing
 
