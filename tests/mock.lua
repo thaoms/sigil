@@ -48,7 +48,8 @@ end
 UIParent, UIErrorsFrame, UISpecialFrames = widget("Frame"), widget("Frame"), {}
 ChatFrame2 = widget("Frame")
 local clogHooks = {}
-function hooksecurefunc(frame, method, fn) clogHooks[#clogHooks + 1] = fn end
+function hooksecurefunc(frame, method, fn) if type(frame) == "table" then clogHooks[#clogHooks + 1] = fn end end
+function CombatLog_OnEvent() end
 Minimap, GameTooltip = widget("Frame"), widget("Frame")
 function Minimap:GetCenter() return 100, 100 end
 function Minimap:GetEffectiveScale() return 1 end

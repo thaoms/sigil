@@ -559,13 +559,81 @@ local function onCombatLogLine(_, text, r, g, b)
   else
     sample = type(text)
   end
-  if #st.samples < 40 then
+  if #st.samples < 40 or (type(text) == "string" and not issecret(text) and not text:find(" creates ", 1, true) and #st.samples < 120) then
     st.samples[#st.samples + 1] = ("%.2fs after swing | colour %s | %s"):format(
       Game.swingAt and (now - Game.swingAt) or -1, colour, sample)
   end
 end
 
+-- Second round: find out how fight lines reach the Combat Log tab.
+-- Lists Blizzard's combat log pieces and listens (read only) to functions
+-- and message frames that may carry them. Records what kind of values arrive.
+local function describeArgs(...)
+  local parts = {}
+  for i = 1, math.min(select("#", ...), 12) do
+    local v = select(i, ...)
+    if issecret(v) then parts[#parts + 1] = "SECRET"
+    elseif type(v) == "string" then parts[#parts + 1] = "'" .. v:sub(1, 40) .. "'"
+    elseif type(v) == "number" or type(v) == "boolean" or v == nil then parts[#parts + 1] = tostring(v)
+    else parts[#parts + 1] = type(v) end
+  end
+  return table.concat(parts, ", ")
+end
+
+function Game.surveyCombatLog()
+  local st = clogStats()
+  st.survey = st.survey or {}
+  st.calls = st.calls or {}
+  local names = {}
+  pcall(function()
+    for name, value in pairs(_G) do
+      if type(name) == "string" and (name:find("CombatLog") or name:find("COMBATLOG") or name:find("CombatText")) then
+        names[#names + 1] = name .. "=" .. type(value)
+      end
+    end
+  end)
+  table.sort(names)
+  st.survey = {}
+  for i = 1, math.min(#names, 80) do st.survey[i] = names[i] end
+  -- listen to Blizzard combat log functions
+  for _, entry in ipairs(names) do
+    local name, kind = entry:match("^(.-)=(.*)$")
+    if kind == "function" and not (Game.clogFnHooked or {})[name] and not name:find("^Sigil") then
+      Game.clogFnHooked = Game.clogFnHooked or {}
+      local ok = pcall(hooksecurefunc, name, function(...)
+        local c = st.calls[name] or { n = 0, samples = {} }
+        st.calls[name] = c
+        c.n = c.n + 1
+        if #c.samples < 6 then
+          local now = GetTime()
+          c.samples[#c.samples + 1] = ("%.2fs after swing: %s"):format(Game.swingAt and (now - Game.swingAt) or -1, describeArgs(...))
+        end
+      end)
+      Game.clogFnHooked[name] = ok
+    end
+  end
+  -- listen to any message frames inside the Combat Log tab
+  local frame = _G.ChatFrame2
+  if frame and frame.GetChildren and not Game.clogChildrenHooked then
+    Game.clogChildrenHooked = true
+    pcall(function()
+      for i, child in ipairs({ frame:GetChildren() }) do
+        if child.AddMessage then
+          hooksecurefunc(child, "AddMessage", function(_, text)
+            local key = "ChatFrame2.child" .. i
+            local c = st.calls[key] or { n = 0, samples = {} }
+            st.calls[key] = c
+            c.n = c.n + 1
+            if #c.samples < 6 then c.samples[#c.samples + 1] = describeArgs(text) end
+          end)
+        end
+      end
+    end)
+  end
+end
+
 function Game.hookCombatLog()
+  if not Game.clogSurveyed then Game.clogSurveyed = true; pcall(Game.surveyCombatLog) end
   if Game.clogHooked then return true end
   local frame = _G.COMBATLOG or _G.ChatFrame2
   if not frame or not frame.AddMessage then return false end
@@ -736,7 +804,8 @@ function handlers.PLAYER_TARGET_CHANGED()
 end
 
 function handlers.ADDON_LOADED(name)
-  if plain(name) == "Blizzard_CombatLog" then Game.hookCombatLog() end
+  name = plain(name)
+  if name and name:find("CombatLog") then Game.clogSurveyed = false; Game.hookCombatLog() end
 end
 
 function handlers.NAME_PLATE_UNIT_ADDED(unit)
@@ -1071,7 +1140,15 @@ function Game.report()
   local cl = c.clog
   add("combat log tab: hooked %s, lines %d (readable %d, hidden %d), miss words %d, within 1.2s of a swing %d",
     tostring(Game.clogHooked), cl and cl.lines or 0, cl and cl.readable or 0, cl and cl.hidden or 0, cl and cl.misses or 0, cl and cl.nearSwing or 0)
-  for _, line in ipairs(cl and cl.samples or {}) do add("  log: %s", line) end
+  local near = 0
+  for _, line in ipairs(cl and cl.samples or {}) do
+    if not line:find(" creates ", 1, true) and near < 15 then near = near + 1; add("  log: %s", line) end
+  end
+  add("combat log pieces: %s", cl and cl.survey and table.concat(cl.survey, " ") or "none")
+  for name, c in pairs(cl and cl.calls or {}) do
+    add("  calls %s: %d", name, c.n)
+    for _, sample in ipairs(c.samples) do add("    %s", sample) end
+  end
   local both, single = Game.compareLines()
   for _, line in ipairs(both) do add("kill time %s", line) end
   for _, line in ipairs(single) do add("kill time %s", line) end
