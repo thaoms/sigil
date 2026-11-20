@@ -228,6 +228,10 @@ expect("drift noticed", ns.Game.stats.drifted, 1)
 SlashCmdList.SIGIL("check")
 expect("report saved", type(SigilDB.report.lines), "table")
 SlashCmdList.SIGIL("demo"); tick(12); SlashCmdList.SIGIL("demo")
+ns.Setup.show(); SlashCmdList.SIGIL("")
+expect("opening options closes setup", ns.Setup.frame.shown, false)
+ns.Setup.show()
+expect("opening setup closes options", ns.Options.frame.shown, false)
 SlashCmdList.SIGIL(""); SlashCmdList.SIGIL("lock"); SlashCmdList.SIGIL("unlock"); SlashCmdList.SIGIL("macro"); SlashCmdList.SIGIL("reset"); SlashCmdList.SIGIL("nonsense")
 for _, row in ipairs({ "locked", "hideErrors", "attackKeys", "consecration", "recover" }) do
   local c = ns.Options.frame.controls[row]

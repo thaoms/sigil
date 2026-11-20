@@ -118,6 +118,7 @@ end
 function Options.toggle()
   if not Options.frame then Options.create() end
   if Options.frame:IsShown() then Options.frame:Hide() return end
+  if ns.Setup.frame then ns.Setup.frame:Hide() end        -- one window at a time
   Options.refresh()
   Options.frame:Show()
 end

@@ -13,6 +13,7 @@ local function panel(name, width, height)
   f:SetSize(width, height)
   f:SetPoint("CENTER", 0, 60)
   f:SetFrameStrata("DIALOG")
+  if f.SetToplevel then f:SetToplevel(true) end
   f:SetClampedToScreen(true)
   f:EnableMouse(true)
   f:SetMovable(true)
@@ -121,6 +122,11 @@ function Setup.create()
   f.options:SetPoint("BOTTOMLEFT", 16, 14)
   f.close = button(f, "Done", 90, function()
     ns.db.setupDone = true
+    if not ns.db.locked then
+      ns.db.locked = true
+      ns.Halo.applyLayout()
+      ns.say("Halo locked. Type /sigil unlock to move it again.")
+    end
     f:Hide()
   end)
   f.close:SetPoint("BOTTOMRIGHT", -16, 14)
@@ -128,14 +134,7 @@ function Setup.create()
   f.foot:SetPoint("LEFT", f.options, "RIGHT", 10, 0)
   f.foot:SetPoint("RIGHT", f.close, "LEFT", -10, 0)
   f.foot:SetJustifyH("LEFT")
-  f:SetScript("OnHide", function()
-    ns.db.setupDone = true
-    if not ns.db.locked then
-      ns.db.locked = true
-      ns.Halo.applyLayout()
-      ns.say("Halo locked. Type /sigil unlock to move it again.")
-    end
-  end)
+  f:SetScript("OnHide", function() ns.db.setupDone = true end)
 end
 
 local function missing()
@@ -238,6 +237,7 @@ ns.refreshSetup = Setup.refresh
 
 function Setup.show()
   if not Setup.frame then Setup.create() end
+  if ns.Options.frame then ns.Options.frame:Hide() end   -- one window at a time
   Setup.frame.pending = nil
   ns.Game.scanKeys()
   Setup.frame:Show()
