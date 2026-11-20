@@ -63,7 +63,7 @@ Suggested bar, as in the screenshot: 1 the Attack macro, 2 Seal of the Crusader 
 The game hides buffs, mana, damage and cooldown times from addons during combat. Sigil works from what is left:
 
 - **The stack arcs are drawn by the game.** Sigil tells the game's aura display which buff to show on each arc, and the game fills them from your real Unsealed Wrath stacks, in the seal's colour, even in combat. Sigil never reads the number. If the client doesn't offer that, the arcs show Sigil's own count instead. The technique comes from the Unsealed Wrath Tracker addon.
-- **The swap call runs on Sigil's own count.** Every swing adds a stack, unless a miss on your target arrives when your swing's result is due (0.25 to 1.1 seconds after it). The same rule applies solo and in groups; in a group another player's miss can occasionally land in that window, and the real number shows when that happened.
+- **The swap call runs on Sigil's own count.** Every swing adds a stack, unless a miss on your target arrives when your swing's result is due (0.25 to 1.1 seconds after it). That rule applies solo only: in party play the target's misses in that window were all other players', so in a group misses are not counted and your own rare miss can leave the count one high.
 - **Only signals the game confirms correct the count:** the Cooldown Manager showing the stack buff gone or present, Seal of Command extra hits that reveal a release, and the real buff after every fight.
 - **Who missed** can't be seen: addons get no combat log on this client, and the Combat Log tab passes no fight lines to them (tested live).
 - **Mana level** comes from which spells the game says you can afford. The bar shows the true value, drawn by the game; Sigil cannot read it.
@@ -77,8 +77,9 @@ Code layout:
 ## Tested
 
 - Solo, in live fights: the stack count matched the real buff in 50 consecutive fights across both patterns, and the Cooldown Manager's signal agreed with Sigil in over 2,000 checks with no disagreement.
-- Seen working live: the Crusader opener, the low-mana level with its drink reminder, the automatic stun, and the game-drawn stack arcs (solo, 4 fights).
-- Not yet seen in a live fight: Seal of Wisdom recovery, the Consecration mark, groups and dungeons, and the Cooldown Manager correction itself.
+- Seen working live: the Crusader opener, the low-mana level with its drink reminder, the automatic stun, the game-drawn stack arcs, Seal of Wisdom at low mana, the Consecration mark on packs, and a Cooldown Manager correction in a party.
+- In a party (a few fights), the miss rule undid 3 swings that had in fact landed, so it now applies solo only.
+- Not yet seen in a live fight: dungeons and raids.
 
 ## Package
 

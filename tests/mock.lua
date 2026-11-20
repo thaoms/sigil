@@ -233,9 +233,11 @@ expect("one swing is only undone once", ns.Game.stats.misses, 1)
 world.inGroup = true
 fire("PLAYER_SWING", 3.3, 0); tick(0.5)
 local missesBefore = ns.Game.stats.misses
+local storedBefore, stacksBefore = ns.Game.tracker.stored, ns.Game.tracker.stacks
 fire("UNIT_COMBAT", "target", "PARRY", "", 0, 1); tick(0.1)
-expect("the same miss rule applies in a group", ns.Game.stats.misses, missesBefore + 1)
-expect("the parried swing is undone", ns.Game.tracker.stored, "righteousness")
+expect("in a group a miss is not counted", ns.Game.stats.misses, missesBefore)
+expect("in a group the swing is kept", ns.Game.tracker.stored, storedBefore)
+expect("in a group the stacks are kept", ns.Game.tracker.stacks, stacksBefore)
 world.inGroup = false
 cast(20915); fire("PLAYER_SWING", 3.3, 0); tick(0.3)
 world.known[99999] = true

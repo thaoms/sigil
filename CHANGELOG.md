@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- In a group, a miss on your target no longer takes a stack back. In party play those misses were other players', so Sigil was counting one stack too few and calling the swap a swing late
+
 ## 0.2.0-beta3
 
 - The stack arcs are now drawn by the game from your real Unsealed Wrath stacks, in the seal's colour, so they stay right in combat, solo or in a group. No Cooldown Manager setup needed for this

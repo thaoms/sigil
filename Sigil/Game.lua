@@ -594,8 +594,8 @@ end
 
 -- The game reports "something was missed, dodged or parried on the target"
 -- without saying by whom. A missed swing stores no stack (the real buff
--- confirmed it), so a miss at the moment your swing's result is due undoes
--- the stack that swing added.
+-- confirmed it), so solo a miss at the moment your swing's result is due
+-- undoes the stack that swing added.
 local function onUnitCombat(unit, action)
   if plain(unit) ~= "target" then return end
   if not MISSES[plain(action) or ""] then return end
@@ -603,11 +603,14 @@ local function onUnitCombat(unit, action)
   local sinceSwing = Game.swingAt and (now - Game.swingAt) or -1
   local sinceAbility = Game.lastAbility and (now - Game.lastAbility) or -1
   local verdict = "ignored"
-  -- One rule, solo and in groups alike. Live, your swing's result arrived
-  -- 0.3 to 1.0 seconds after the swing and an ability's at the moment of the
-  -- cast. In a group another player's miss can land in that window now and
-  -- then; the game's own stack number on the halo shows when that happened.
-  if sinceAbility >= 0 and sinceAbility < 0.25 then
+  -- Live, your swing's result arrived 0.3 to 1.0 seconds after the swing and
+  -- an ability's at the moment of the cast. In a group the target's misses
+  -- are mostly other players': in party play every swing undone this way had
+  -- in fact landed. So in a group misses change nothing; the Cooldown Manager
+  -- and the game-drawn arcs still show the real stacks.
+  if plain(try(IsInGroup)) == true then
+    verdict = "in a group, not counted"
+  elseif sinceAbility >= 0 and sinceAbility < 0.25 then
     verdict = "ability"
   elseif sinceSwing < 0.25 then
     verdict = "too soon after the swing to be its result"
