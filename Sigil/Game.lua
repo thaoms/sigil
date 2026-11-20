@@ -533,17 +533,6 @@ end
 -- In a group other players' misses look the same, so there every swing counts.
 local function onUnitCombat(unit, action, _, amount)
   if plain(unit) ~= "target" then return end
-  -- Solo, every hit on the target is ours: add it up to compare seal patterns.
-  if plain(action) == "WOUND" and Game.fight and not plain(try(IsInGroup)) then
-    local hit = plain(amount)
-    Game.fight.hits = (Game.fight.hits or 0) + 1
-    if type(hit) == "number" then Game.fight.damage = Game.fight.damage + hit
-    elseif not Game.fight.oddAmount then
-      Game.fight.oddAmount = true
-      Game.log("hit amount unreadable: %s", issecret(amount) and "SECRET" or type(amount))
-    end
-    return
-  end
   if not MISSES[plain(action) or ""] then return end
   local now = GetTime()
   local sinceSwing = Game.swingAt and (now - Game.swingAt) or -1
@@ -572,26 +561,49 @@ handlers.UNIT_COMBAT = onUnitCombat
 
 function handlers.PLAYER_REGEN_DISABLED()
   Game.inCombat = true
-  Game.fight = { start = GetTime(), damage = 0, seals = 0, pattern = ns.db and ns.db.pattern or "burst" }
+  local name, level = plain(try(UnitName, "target")), plain(try(UnitLevel, "target"))
+  Game.fight = { start = GetTime(), seals = 0, pattern = ns.db and ns.db.pattern or "burst",
+    mob = (name and plain(try(UnitCanAttack, "player", "target"))) and (name .. " (" .. tostring(level or "?") .. ")") or nil }
   Game.compareDue = nil
   Game.stats.fights = (Game.stats.fights or 0) + 1
 end
 
--- Damage per second and seals cast, kept per seal pattern across sessions.
+-- The game hides hit amounts from addons, so damage can't be added up.
+-- What can be measured is how long a kill takes: per seal pattern and per
+-- kind of mob, solo, one enemy at a time.
 local function closeFight()
   local fight = Game.fight
   Game.fight = nil
-  if not fight then return end
+  if not fight or not ns.db then return end
   local seconds = GetTime() - fight.start
-  if seconds < 8 or fight.damage <= 0 or not ns.db then
-    Game.log("fight not counted: %.1fs, %s damage, %s hits seen, group %s", seconds, tostring(fight.damage), tostring(fight.hits), tostring(plain(try(IsInGroup))))
-    return
+  local why
+  if not fight.mob then why = "no target at the start"
+  elseif seconds < 5 then why = "under 5 seconds"
+  elseif (fight.enemies or 0) > 1 then why = "more than one enemy"
+  elseif plain(try(IsInGroup)) then why = "in a group" end
+  if why then Game.log("fight not counted (%s): %.1fs", why, seconds) return end
+  Game.log("fight: %s, %.1fs, %d seals, pattern %s", fight.mob, seconds, fight.seals, fight.pattern)
+  ns.db.kills = ns.db.kills or {}
+  local mob = ns.db.kills[fight.mob] or {}
+  ns.db.kills[fight.mob] = mob
+  local t = mob[fight.pattern] or { fights = 0, seconds = 0, seals = 0 }
+  mob[fight.pattern] = t
+  t.fights, t.seconds, t.seals = t.fights + 1, t.seconds + seconds, t.seals + fight.seals
+end
+
+-- Lines for /sigil compare: mobs fought with both patterns come first.
+function Game.compareLines()
+  local both, single = {}, {}
+  for mob, by in pairs(ns.db and ns.db.kills or {}) do
+    local a, b = by.burst, by.even
+    local function part(label, x)
+      return x and ("%s %.1fs over %d fight%s"):format(label, x.seconds / x.fights, x.fights, x.fights == 1 and "" or "s") or nil
+    end
+    local line = mob .. ": " .. table.concat({ part("3 and 1", a), part("3 and 3", b) }, ", ")
+    if a and b then both[#both + 1] = line else single[#single + 1] = line end
   end
-  Game.log("fight: %.0fs, %d damage, %.0f per second, %d seals, pattern %s", seconds, fight.damage, fight.damage / seconds, fight.seals, fight.pattern)
-  ns.db.tally = ns.db.tally or {}
-  local t = ns.db.tally[fight.pattern] or { fights = 0, seconds = 0, damage = 0, seals = 0 }
-  t.fights, t.seconds, t.damage, t.seals = t.fights + 1, t.seconds + seconds, t.damage + fight.damage, t.seals + fight.seals
-  ns.db.tally[fight.pattern] = t
+  table.sort(both); table.sort(single)
+  return both, single
 end
 
 function handlers.PLAYER_REGEN_ENABLED()
@@ -725,6 +737,7 @@ function Game.view()
   v.judgementRemains = judgementReady and 0 or t:remains("judgement", now)
   if judgementReady == false and v.judgementRemains == 0 then v.judgementRemains = 99 end
   v.enemies = Game.enemies()
+  if Game.fight and v.enemies and v.enemies > (Game.fight.enemies or 0) then Game.fight.enemies = v.enemies end
   local aura = Game.auraState()
   v.auraMissing = aura == "missing"
   v.auraWrong = aura == "wrong"
@@ -799,9 +812,9 @@ function Game.report()
   add("stats: fights %s swings %s misses %s judgements %s holy strikes %s compared %s drifted %s", tostring(s.fights), tostring(s.swings),
     tostring(s.misses), tostring(s.judgement), tostring(s.holy_strike), tostring(s.compared), tostring(s.drifted))
   for name, cd in pairs(Game.tracker.cooldowns) do add("cooldown %s %.1f", name, cd) end
-  for pattern, x in pairs(ns.db and ns.db.tally or {}) do
-    add("pattern %s: %d fights, %.0f damage per second, one seal every %.1fs", pattern, x.fights, x.damage / x.seconds, x.seals > 0 and x.seconds / x.seals or 0)
-  end
+  local both, single = Game.compareLines()
+  for _, line in ipairs(both) do add("kill time %s", line) end
+  for _, line in ipairs(single) do add("kill time %s", line) end
   end)
   return out
 end

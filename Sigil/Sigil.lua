@@ -95,13 +95,17 @@ local function command(msg)
   elseif word == "check" then
     check()
   elseif word == "compare" then
-    local any
-    for pattern, x in pairs(db.tally or {}) do
-      any = true
-      ns.say(("%s: %d fights, %.0f damage per second, one seal cast every %.1f seconds"):format(
-        pattern == "even" and "3 and 3" or "3 and 1", x.fights, x.damage / x.seconds, x.seals > 0 and x.seconds / x.seals or 0))
+    local both, single = ns.Game.compareLines()
+    if #both + #single == 0 then
+      ns.say("No fights measured yet. It counts solo fights against one enemy, 5 seconds or longer.")
+    else
+      ns.say("Average time to kill, per seal pattern (shorter is better):")
+      for _, line in ipairs(both) do print("  " .. line) end
+      if #single > 0 then
+        print("  Fought with one pattern only so far:")
+        for _, line in ipairs(single) do print("    " .. line) end
+      end
     end
-    if not any then ns.say("No fights measured yet. Fight solo for at least 8 seconds.") end
   elseif word == "macro" then
     ns.say("Attack macro text:")
     for line in ns.Game.macroBody():gmatch("[^\n]+") do print("  " .. line) end
