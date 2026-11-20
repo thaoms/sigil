@@ -126,10 +126,11 @@ function Halo.create()
   for i = 1, 3 do f.stacks[i] = tex(art, "stack" .. i, "ARTWORK", 1) end
   f.disc = tex(art, "disc", "ARTWORK", 2)
 
-  -- the spell's own icon, cut round, filling the disc
+  -- the spell's own icon, cut round, small and centred on the dark disc.
+  -- Game icons are 64 pixels: drawn larger than that they turn blurry.
   f.icon = art:CreateTexture(nil, "ARTWORK", nil, 3)
-  f.icon:SetPoint("CENTER")
-  f.icon:SetSize(136 * U, 136 * U)
+  f.icon:SetPoint("CENTER", 0, 12 * U)
+  f.icon:SetSize(64 * U, 64 * U)
   makeRound(art, f.icon)
   f.glyph = art:CreateTexture(nil, "ARTWORK", nil, 3)
   f.glyph:SetPoint("CENTER", 0, 10 * U)
@@ -291,7 +292,7 @@ function Halo.render(d, demo)
   local c = Data.color[main.id] or Data.color.gold
   setIcon(f.icon, f.glyph, main.id, c)
   pcall(f.icon.SetDesaturated, f.icon, idle)
-  f.icon:SetAlpha(idle and 0.55 or 1)
+  f.icon:SetAlpha(idle and 0.6 or 1)
   tint(f.edge, c, main.urgent and 1 or 0.8)
   tint(f.glow, c, main.urgent and 1 or 0.55)
   f.pulsing = main.urgent and not idle
