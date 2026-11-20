@@ -136,10 +136,10 @@ function Halo.create()
   f.name:SetPoint("TOP", f, "BOTTOM", 0, -8)
   f.why = labels:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   f.why:SetPoint("TOP", f.name, "BOTTOM", 0, -3)
-  f.why:SetWidth(SIZE * 1.6)
+  f.why:SetWidth(0)
   f.marks = labels:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   f.marks:SetPoint("TOP", f.why, "BOTTOM", 0, -4)
-  f.marks:SetWidth(SIZE * 1.8)
+  f.marks:SetWidth(0)
   f.marks:SetTextColor(1.00, 0.82, 0.30)
   local font = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
   pcall(f.key.SetFont, f.key, font, 22, "THICKOUTLINE")
@@ -219,7 +219,7 @@ function Halo.render(d, demo)
     return
   end
   f:SetAlpha(1)
-  local dim = idle and 0.6 or 1
+  local dim = idle and 0.75 or 1
   f.art:SetAlpha(dim)
   f.back:SetAlpha(dim)
   if f.swing then f.swing:SetAlpha(dim) end
@@ -286,6 +286,13 @@ function Halo.render(d, demo)
   if lines == 0 then
     f.plate:Hide()
   else
+    -- the plate hugs the text instead of spanning a fixed width
+    local widest = 0
+    for _, fs in ipairs({ f.name, f.why, f.marks }) do
+      local w = fs.GetStringWidth and fs:GetStringWidth() or 0
+      if type(w) == "number" and w > widest then widest = w end
+    end
+    f.plate:SetWidth(widest > 0 and (widest + 28) or SIZE * 1.75)
     f.plate:SetHeight(10 + (idle and 0 or 22) + (lines - (idle and 0 or 1)) * 17)
     f.plate:Show()
   end
