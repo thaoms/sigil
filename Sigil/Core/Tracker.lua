@@ -99,7 +99,7 @@ end
 
 function Tracker:swingMissed(now)
   local u = self.undo
-  if not u or now - u.at > 1 then return false end
+  if not u or now - u.at > 2 then return false end
   self.stacks, self.stored, self.stacksExpire = u.stacks, u.stored, u.stacksExpire
   self.undo, self.lastRelease = nil, nil
   return true

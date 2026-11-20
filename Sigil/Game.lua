@@ -503,16 +503,27 @@ local function onSwing(duration, swingType)
   if ns.onSwing then ns.onSwing(now, Game.tracker.swingSpeed) end
 end
 
--- Misses on the target are only recorded, not acted on. The first real fight
--- showed they can't be tied to our swing reliably: undoing a stack for each
--- one left the count at 0 while the real buff had 3. Counting every swing
--- can at worst call the swap one swing early; undercounting never calls it.
+-- The game reports "something was missed, dodged or parried on the target"
+-- without saying what. Live fights showed the pattern: an ability's result
+-- arrives the instant it is cast, a swing's result up to a second or two
+-- after the swing. A missed swing stores no stack (the real buff confirmed
+-- it), so a miss that isn't an ability's undoes the last swing's stack.
+-- In a group other players' misses look the same, so there every swing counts.
 local function onUnitCombat(unit, action, _, amount)
   if plain(unit) ~= "target" or not MISSES[plain(action) or ""] then return end
   local now = GetTime()
-  Game.stats.misses = (Game.stats.misses or 0) + 1
-  Game.log("target %s: %.2fs after swing, %.2fs after ability", tostring(plain(action)),
-    Game.swingAt and (now - Game.swingAt) or -1, Game.lastAbility and (now - Game.lastAbility) or -1)
+  local sinceSwing = Game.swingAt and (now - Game.swingAt) or -1
+  local sinceAbility = Game.lastAbility and (now - Game.lastAbility) or -1
+  local verdict = "ignored"
+  if sinceAbility >= 0 and sinceAbility < 0.25 then
+    verdict = "ability"
+  elseif plain(try(IsInGroup)) then
+    verdict = "in a group"
+  elseif sinceSwing >= 0 and sinceSwing <= 2.0 and Game.tracker:swingMissed(now) then
+    verdict = "swing undone, now x" .. Game.tracker.stacks
+    Game.stats.misses = (Game.stats.misses or 0) + 1
+  end
+  Game.log("target %s: %.2fs after swing, %.2fs after ability -> %s", tostring(plain(action)), sinceSwing, sinceAbility, verdict)
 end
 
 local handlers = {}
