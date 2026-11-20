@@ -242,7 +242,11 @@ end
 ---------------------------------------------------------------------------
 
 function Game.macroBody()
-  local lines = { "#showtooltip", "/startattack" }
+  -- A fixed icon: without a name the button shows whichever spell is first
+  -- in the list, so it would turn into the stun when that is in the macro.
+  local face = Game.known.holy_strike or Game.known.judgement
+  local faceName = face and plain(try(C_Spell.GetSpellName, face))
+  local lines = { faceName and ("#showtooltip " .. faceName) or "#showtooltip", "/startattack" }
   -- With the stun first, a press where both are ready stuns and then judges
   -- the stunned target in the same instant (Judgement skips the global cooldown).
   -- "solo" uses the macro condition [nogroup]: the stun only fires when you
