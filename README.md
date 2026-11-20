@@ -48,7 +48,9 @@ A setup window opens on first login. It creates the Attack macro, lists Sigil's 
 
 ![The options window](docs/screenshots/options.png)
 
-Suggested bar: 1 Attack macro, 2 Seal of Command, 3 Seal of Righteousness, 4 Consecration, 5 Hammer of Justice, and Seal of Wisdom on any key. Sigil shows whichever keys you actually use.
+Suggested bar, as in the screenshot: 1 the Attack macro, 2 Seal of the Crusader (only if you use the opener), 3 Seal of Command, 4 Seal of Righteousness, 5 Consecration, 6 Hammer of Justice, 8 Seal of Wisdom. Sigil shows whichever keys you actually use.
+
+![An action bar laid out for Sigil](docs/screenshots/action-bar.png)
 
 ## How it works
 
