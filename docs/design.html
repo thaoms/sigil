@@ -238,6 +238,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           <div class="seal-now">
             Active seal
             <b id="sealNow">None</b>
+            <span id="manaNow">Mana: comfortable</span>
           </div>
         </div>
 
@@ -281,6 +282,10 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           <input type="range" id="speed" min="2" max="4" step="0.1" value="3.3">
         </div>
         <div class="ctl">
+          <span class="lbl">Set mana to</span>
+          <div class="seg" id="manaSet"><button data-m="100">Full</button><button data-m="35">Low</button><button data-m="8">Empty</button></div>
+        </div>
+        <div class="ctl">
           <span class="lbl">Consecration</span>
           <div class="seg" data-key="cons"><button data-v="aoe" aria-pressed="true">3+ enemies</button><button data-v="always">Always</button><button data-v="never">Never</button></div>
         </div>
@@ -292,13 +297,14 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   <section aria-labelledby="anatomy">
     <header class="col">
       <p class="eyebrow">Anatomy</p>
-      <h2 id="anatomy">Four things you read from one shape</h2>
+      <h2 id="anatomy">Five things you read from one shape</h2>
     </header>
     <div class="two">
       <ul class="plain">
         <li><div><b>Center glyph</b><span>The next ability to press. Seals sit in a hexagon frame so you can tell them from attacks at a glance. A number on the glyph means it's coming off cooldown.</span></div></li>
         <li><div><b>Three inner arcs</b><span>Unsealed Wrath stacks. They take the color of the stored seal: red for Command, amber for Righteousness.</span></div></li>
         <li><div><b>Outer ring</b><span>Your swing timer. It fills toward the notch at the top, and your next swing lands at the notch. When it's time to swap seals, the swap has to happen before the ring reaches the notch.</span></div></li>
+        <li><div><b>Three marks at the bottom</b><span>Your mana level: three blue marks is comfortable, two amber is getting low, one red is nearly empty.</span></div></li>
         <li><div><b>Two trailing orbs</b><span>What's coming up next, fading with distance. Useful for planning a seal swap around the global cooldown.</span></div></li>
       </ul>
       <div class="note" style="align-self:start">All artwork is drawn from scratch in one line style: no game icons, no art borrowed from other addons. In-game, the halo is a single movable frame you can scale between 60% and 160%.</div>
@@ -350,9 +356,23 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     </header>
     <ul class="plain col">
       <li><div><b>Retribution Aura and your blessing</b><span>A small mark appears when your aura is off or your blessing has run out. Sigil remembers whether you last cast Blessing of Might or Blessing of Wisdom and reminds you of that one.</span></div></li>
-      <li><div><b>Running out of mana</b><span>When you can no longer afford your next ability, Sigil stops calling Consecration first, then shows a low-mana mark. That's your moment to switch to Blessing of Wisdom; Sigil won't nag you to switch back.</span></div></li>
       <li><div><b>Hammer of Justice</b><span>Judging Seal of Command on a stunned target deals double damage. When Hammer of Justice and Judgement are both ready and Command is up, a mark shows the combo: stun, then Judgement. It's a suggestion on the side, never in the main queue, since you may be saving the stun.</span></div></li>
     </ul>
+  </section>
+
+  <section aria-labelledby="mana">
+    <header class="col">
+      <p class="eyebrow">Mana</p>
+      <h2 id="mana">The rotation scales down before you run dry</h2>
+      <p class="lede">The weave casts two seals every 13 seconds, which costs more than Judgement gives back. The game hides your exact mana from addons, so Sigil works out a rough level from which spells you can still afford, and changes its calls with it.</p>
+    </header>
+    <ul class="plain col">
+      <li><div><b>Comfortable</b><span>Full weave, plus Consecration according to your setting.</span></div></li>
+      <li><div><b>Getting low</b><span>No Consecration. Sigil stops calling the Righteousness swap and keeps you on Seal of Command, which roughly halves what you spend on seals.</span></div></li>
+      <li><div><b>Nearly empty</b><span>Sigil calls Seal of Wisdom, which gives mana back as you hit. It sends you back to Command once you can afford the weave again.</span></div></li>
+      <li><div><b>Between pulls</b><span>A drink mark shows if you'd start the next fight low.</span></div></li>
+    </ul>
+    <p class="note col">You can choose how to recover: Seal of Wisdom, a reminder to switch to Blessing of Wisdom as you do now, or both. I expect Seal of Wisdom to recover faster in a fight while you keep Blessing of Might, but I haven't checked the Forever numbers. Whether the “can I afford this” check works in combat for a Paladin is the first thing I'll test when building.</p>
   </section>
 
   <section aria-labelledby="sees">
@@ -376,7 +396,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         <ul class="plain">
           <li><div>Buffs and debuffs<span>Sigil counts Unsealed Wrath stacks itself, from your swings. In dungeons and raids the game also hides misses, so the count can run one ahead after a miss or dodge. It corrects itself when the stacks expire or the fight ends.</span></div></li>
           <li><div>Target health<span>No percentage. Sigil shows Hammer of Wrath when the game marks it usable.</span></div></li>
-          <li><div>Exact mana<span>Sigil only knows “enough for this spell” or “not enough”.</span></div></li>
+          <li><div>Exact mana<span>Sigil only knows “enough for this spell” or “not enough”. It checks several spells to work out a rough level.</span></div></li>
           <li><div>Cooldown seconds<span>Sigil times them itself from your casts.</span></div></li>
         </ul>
       </div>
@@ -410,6 +430,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       <div class="srow"><span>Show the reason line<small>“3 Command stacks stored: swap now”.</small></span><input class="toggle" type="checkbox" id="s-why" checked aria-label="Show the reason line"></div>
       <div class="srow"><span>Only in combat<small>Hide the halo when you're not fighting.</small></span><input class="toggle" type="checkbox" id="s-combat" aria-label="Only in combat"></div>
       <div class="srow"><span>Consecration<small>When Sigil should call it.</small></span><select id="s-cons" aria-label="Consecration"><option>3 or more enemies</option><option>Always</option><option>Never</option></select></div>
+      <div class="srow"><span>When mana runs low<small>How Sigil helps you recover.</small></span><select id="s-mana" aria-label="When mana runs low"><option>Seal of Wisdom</option><option>Blessing of Wisdom reminder</option><option>Both</option></select></div>
       <div class="srow"><span>Aura and blessing reminders<small>Shown only when one is missing.</small></span><input class="toggle" type="checkbox" id="s-upkeep" checked aria-label="Aura and blessing reminders"></div>
       <div class="srow"><span>Hammer of Justice cue<small>Marks the stun-then-Judgement combo when both are ready.</small></span><input class="toggle" type="checkbox" id="s-hoj" checked aria-label="Hammer of Justice cue"></div>
       <div class="srow"><span>Hide “not ready” messages<small>Silences the red error text while you spam Attack.</small></span><input class="toggle" type="checkbox" id="s-err" checked aria-label="Hide not ready messages"></div>
@@ -498,6 +519,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     SoC: 'M24 10 V37 M17.5 15.5 H30.5 M24 37 L21.5 33.5 M24 37 L26.5 33.5',
     SoR: 'M24 36.5 C16.5 31 17.5 22.5 24 12 C30.5 22.5 31.5 31 24 36.5 Z M24 31.5 C21.5 29 22 25.5 24 22.5 C26 25.5 26.5 29 24 31.5 Z',
     SotC: 'M24 12 V36 M15 21 H33',
+    SoW: 'M24 12 C19.5 19 17 23 17 27.5 A7 7 0 0 0 31 27.5 C31 23 28.5 19 24 12 Z',
     J: 'M24 7 V40 M15 40 H33 M10 13 H38 M10 13 L5.5 25 H14.5 Z M38 13 L33.5 25 H42.5 Z M24 7 L22 10 H26 Z',
     HS: 'M9 39 L31 17 M27 13 L35 21 M12 32 L16 36 M37 6 V11 M42 11 H37 M41 6 L37.5 9.5',
     Exo: 'M16 24 A8 8 0 1 0 32 24 A8 8 0 1 0 16 24 M24 4 V9 M24 39 V44 M4 24 H9 M39 24 H44 M10 10 L13.5 13.5 M34.5 34.5 L38 38 M38 10 L34.5 13.5 M13.5 34.5 L10 38',
@@ -508,10 +530,12 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     BoM: 'M24 42 V14 M24 14 L17 22 M24 14 L31 22 M14 30 H34 M24 6 V9',
     BoW: 'M24 8 C17 18 14 24 14 30 A10 10 0 0 0 34 30 C34 24 31 18 24 8 Z M20 31 A4 4 0 0 0 24 35'
   };
-  const SEALS = new Set(['SoC', 'SoR', 'SotC']);
+  const SEALS = new Set(['SoC', 'SoR', 'SotC', 'SoW']);
+  const COST = { SoC: 8, SoR: 8, SoW: 3, HS: 5, J: 3, Exo: 6, Cons: 12, HoW: 5 };
   const AB = {
     SoC: { name: 'Seal of Command', color: 'var(--g-cmd)', key: 'Q' },
     SoR: { name: 'Seal of Righteousness', color: 'var(--g-right)', key: 'E' },
+    SoW: { name: 'Seal of Wisdom', color: 'var(--g-judge)', key: 'R' },
     SotC: { name: 'Seal of the Crusader', color: 'var(--g-crus)', key: 'E' },
     J: { name: 'Judgement', color: 'var(--g-judge)', key: '1', cd: 8 },
     HS: { name: 'Holy Strike', color: 'var(--g-holy)', key: '1', cd: 10 },
@@ -538,7 +562,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   }
 
   let uid = 0;
-  function haloSVG({ top, readyIn = 0, stacks = 0, stored = null, swingPct = 0, pulse = false, burst = false, pulseT = null, burstT = null, burstColor = null }) {
+  function haloSVG({ top, readyIn = 0, stacks = 0, stored = null, swingPct = 0, pulse = false, burst = false, pulseT = null, burstT = null, burstColor = null, mana = 3 }) {
     const id = 'h' + (uid++);
     const C = 2 * Math.PI * 100;
     const stackColor = stored ? AB[stored].color : 'var(--scene-gold)';
@@ -556,6 +580,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         </radialGradient>
       </defs>
       <circle cx="110" cy="110" r="108" fill="url(#${id}g)"/>
+      ${[[150, 167], [171.5, 188.5], [193, 210]].map((m, i) => `<path d="${arc(107, m[0], m[1])}" stroke="${(2 - i) < mana ? ['var(--g-cmd)', 'var(--g-right)', 'var(--g-judge)'][mana - 1] : 'var(--scene-line)'}" stroke-width="3.5" stroke-linecap="round" fill="none"/>`).join('')}
       <circle cx="110" cy="110" r="100" fill="none" stroke="var(--scene-line)" stroke-width="2.5"/>
       <circle cx="110" cy="110" r="100" fill="none" stroke="var(--scene-gold)" stroke-width="2.5" stroke-linecap="round"
         stroke-dasharray="${(C * Math.min(swingPct, 0.999)).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 110 110)"/>
@@ -585,9 +610,11 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   const logEl = document.getElementById('log');
 
   function fresh() {
-    s = { t: 0, gcd: 0, cd: { J: 0, HS: 0, Exo: 0, Cons: 0, HoW: 0 }, seal: null, stored: null, stacks: 0,
+    const keep = s ? Math.min(100, s.mana + 12) : 100;
+    s = { mana: keep, mode: 3, t: 0, gcd: 0, cd: { J: 0, HS: 0, Exo: 0, Cons: 0, HoW: 0 }, seal: null, stored: null, stacks: 0,
           swing: 0.8, hp: 100, jotc: false, respawn: 0, log: [] };
     logEl.innerHTML = '';
+    setMode();
     log('Pull. Auto-attack starts.');
   }
 
@@ -600,23 +627,35 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     while (logEl.children.length > 7) logEl.lastChild.remove();
   }
 
+  function setMode() {
+    const was = s.mode;
+    if (s.mana < 18) s.mode = 1;
+    else if (s.mode === 1 ? s.mana < 50 : s.mana < 40) s.mode = s.mode === 1 ? 1 : 2;
+    else if (s.mode === 2 && s.mana < 55) s.mode = 2;
+    else s.mode = 3;
+    return was !== s.mode;
+  }
+  const MODE = { 3: 'Comfortable', 2: 'Getting low', 1: 'Nearly empty' };
+
   function candidates() {
     const c = [];
     const weave = s.seal === 'SoC' || s.seal === 'SoR';
-    if (cfg.opener && !s.jotc) {
-      if (s.seal !== 'SotC') c.push({ key: 'SotC', why: 'Opener: set up Judgement of the Crusader.' });
-      else c.push({ key: 'J', why: 'Judge the Crusader seal. Holy Strike keeps it up from here.' });
+    if (s.mode === 1) {
+      if (s.seal !== 'SoW') c.push({ key: 'SoW', why: 'Nearly out of mana. Seal of Wisdom gives mana back as you hit.' });
+    } else {
+      if (!s.seal) c.push({ key: 'SoC', why: 'No seal active.' });
+      if (s.seal === 'SoW' && s.mode === 3) c.push({ key: 'SoC', why: 'Mana is back. Return to Command.' });
+      if (s.seal && !weave && s.seal !== 'SoW') c.push({ key: 'SoC', why: 'Back to Command to start building stacks.' });
+      if (s.mode === 3 && s.seal === 'SoC' && s.stored === 'SoC' && s.stacks >= 3) c.push({ key: 'SoR', why: '3 Command stacks stored. Swap before the next swing.' });
+      if (s.seal === 'SoR' && (s.stored === 'SoR' || s.mode === 2)) c.push({ key: 'SoC', why: s.mode === 2 ? 'Mana is getting low. Stay on Command.' : 'Command procs released. Swap back and rebuild.' });
     }
-    if (!s.seal) c.push({ key: 'SoC', why: 'No seal active.' });
-    if (s.seal && !weave && (s.jotc || !cfg.opener)) c.push({ key: 'SoC', why: 'Back to Command to start building stacks.' });
-    if (s.seal === 'SoC' && s.stored === 'SoC' && s.stacks >= 3) c.push({ key: 'SoR', why: '3 Command stacks stored. Swap before the next swing.' });
-    if (s.seal === 'SoR' && s.stored === 'SoR') c.push({ key: 'SoC', why: 'Command procs released. Swap back and rebuild.' });
     if (cfg.how && s.hp < 20) c.push({ key: 'HoW', why: 'Target below 20%. The game just marked it usable.' });
     c.push({ key: 'HS', why: 'Strongest attack on cooldown.' });
-    if (weave) c.push({ key: 'J', why: 'Judgement is ready. It skips the global cooldown.' });
+    if (s.seal) c.push({ key: 'J', why: 'Judgement is ready. It refunds part of your seal.' });
     if (cfg.type !== 'Beast') c.push({ key: 'Exo', why: `${cfg.type} target: Exorcism on cooldown.` });
-    if (cfg.cons === 'always' || (cfg.cons === 'aoe' && cfg.enemies >= 3)) c.push({ key: 'Cons', why: cfg.enemies >= 3 ? '3 or more enemies in melee.' : 'Nothing better is ready.' });
-    return c;
+    if (s.mode === 3 && (cfg.cons === 'always' || (cfg.cons === 'aoe' && cfg.enemies >= 3))) c.push({ key: 'Cons', why: cfg.enemies >= 3 ? '3 or more enemies in melee.' : 'Nothing better is ready.' });
+    return c.filter(x => s.mana >= COST[x.key]);
+
   }
 
   const cdOf = k => s.cd[k] || 0;
@@ -631,12 +670,13 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
   function press(key) {
     const a = AB[key];
+    s.mana -= COST[key];
+    if (key === 'J' && s.seal) s.mana = Math.min(100, s.mana + 0.6 * COST[s.seal]);
     if (key !== 'J') s.gcd = 1.5;
     if (a.cd) s.cd[key] = a.cd;
     if (SEALS.has(key)) { s.seal = key; log(`Cast ${a.name}`); return; }
     if (key === 'J') {
-      if (s.seal === 'SotC') { s.jotc = true; log('Judgement of the Crusader on target'); }
-      else log(`Judgement (${AB[s.seal].name} stays up)`);
+      log(`Judgement (${AB[s.seal].name} stays up)`);
       return;
     }
     if (key === 'HS') { log('Holy Strike'); return; }
@@ -653,6 +693,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       if (s.stored === s.seal) s.stacks = Math.min(3, s.stacks + 1); else { s.stored = s.seal; s.stacks = 1; }
       parts.push(`stores ${AB[s.seal].name.replace('Seal of ', '')} ${s.stacks}/3`);
     }
+    if (s.seal === 'SoW') { s.mana = Math.min(100, s.mana + 9); parts.push('Wisdom returns mana'); }
     log('Swing' + (parts.length ? ': ' + parts.join(', ') : ''));
   }
 
@@ -661,6 +702,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     s.t += dt;
     s.gcd = Math.max(0, s.gcd - dt);
     for (const k in s.cd) s.cd[k] = Math.max(0, s.cd[k] - dt);
+    s.mana = Math.min(100, s.mana + dt * 0.35);
+    if (setMode()) log('Mana: ' + MODE[s.mode].toLowerCase());
     s.swing -= dt;
     if (s.swing <= 0) { s.swing += cfg.speed; land(); }
     s.hp = Math.max(0, s.hp - dt * 100 / cfg.fight * (cfg.enemies >= 3 ? 0.8 : 1));
@@ -676,7 +719,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     $('halo').innerHTML = haloSVG({
       top: top && top.key, readyIn: top ? rdy(top.key) : 0,
       stacks: s.stacks, stored: s.stored, swingPct: 1 - s.swing / cfg.speed,
-      pulse: !!isSwap, burst: s.t < burstUntil,
+      mana: s.mode, pulse: !!isSwap, burst: s.t < burstUntil,
       pulseT: calm ? 0.3 : (performance.now() % 1100) / 1100,
       burstT: calm ? 0.4 : Math.min(1, Math.max(0, 1 - (burstUntil - s.t) / 0.6)), burstColor
     });
@@ -688,6 +731,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     $('hpbar').classList.toggle('exec', s.hp < 20);
     $('tgtName').textContent = `Target · ${cfg.type}${cfg.enemies >= 3 ? ' + 2 more' : ''}`;
     $('sealNow').textContent = s.seal ? AB[s.seal].name : 'None';
+    $('manaNow').textContent = 'Mana: ' + MODE[s.mode].toLowerCase();
   }
 
   fresh(); render();
@@ -702,7 +746,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   $('play').addEventListener('click', () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; });
   $('step').addEventListener('click', () => { for (let i = 0; i < 10; i++) tick(0.05); render(); });
   $('reset').addEventListener('click', () => { fresh(); render(); });
-  document.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
+  $('manaSet').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; s.mana = Number(b.dataset.m); if (setMode()) log('Mana: ' + MODE[s.mode].toLowerCase()); render(); });
+  document.querySelectorAll('.seg[data-key]').forEach(seg => seg.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
     const k = seg.dataset.key, v = b.dataset.v;
@@ -716,8 +761,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   const states = [
     { t: 'Building', p: 'Two Command stacks. Holy Strike is up.', o: { top: 'HS', stacks: 2, stored: 'SoC', swingPct: 0.4 } },
     { t: 'Swap now', p: 'Three stacks stored. The halo pulses until you swap.', o: { top: 'SoR', stacks: 3, stored: 'SoC', swingPct: 0.62, pulse: true } },
-    { t: 'Waiting', p: 'Nothing ready. The number counts down Judgement.', o: { top: 'J', readyIn: 1.4, stacks: 1, stored: 'SoC', swingPct: 0.2 } },
-    { t: 'Execute', p: 'Target below 20%. Hammer of Wrath jumps the queue.', o: { top: 'HoW', stacks: 1, stored: 'SoR', swingPct: 0.8 } }
+    { t: 'Waiting', p: 'Nothing ready. The number counts down Judgement.', o: { top: 'J', readyIn: 1.4, stacks: 1, stored: 'SoC', swingPct: 0.2, mana: 2 } },
+    { t: 'Nearly empty', p: 'One red mana mark left. Sigil calls Seal of Wisdom.', o: { top: 'SoW', stacks: 2, stored: 'SoC', swingPct: 0.8, mana: 1 } }
   ];
   $('statesGrid').innerHTML = states.map(x =>
     `<div class="state"><svg viewBox="0 0 220 220" role="img" aria-label="${x.t}">${haloSVG(x.o)}</svg><b>${x.t}</b><p>${x.p}</p></div>`).join('');
@@ -731,6 +776,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     ['HS', 'Holy Strike on cooldown', 'Every 10 seconds. Your hardest-hitting button.'],
     ['J', 'Judgement on cooldown', 'Every 8 seconds with your talents. It skips the global cooldown, keeps your seal up, and refunds 60% of the seal’s mana (Sanctified Judgement).'],
     ['Exo', 'Exorcism on Undead and Demons', 'On cooldown, only against those target types.'],
+    ['SoW', 'Seal of Wisdom when nearly empty', 'Replaces the weave until you can afford it again. See the mana section.'],
     ['Cons', 'Consecration', 'Your choice in settings: on 3 or more enemies, always when nothing better is ready, or never. First thing dropped when mana runs low.']
   ];
   $('prioList').innerHTML = prio.map((x, i) =>
@@ -745,7 +791,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   ].join('');
   $('barSeal').innerHTML = [
     slot('Cons', '2', 'Consecration', 'Packs of enemies'),
-    slot('HoJ', '3', 'Hammer of Justice', 'Stun, then Attack')
+    slot('HoJ', '3', 'Hammer of Justice', 'Stun, then Attack'),
+    slot('SoW', 'R', 'Seal of Wisdom', 'When mana is nearly empty')
   ].join('');
   $('barSide').innerHTML = [
     slot('Aura', '', 'Retribution Aura', 'Once per login'),
