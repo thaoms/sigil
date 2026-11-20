@@ -526,6 +526,55 @@ function Game.commandProc(now)
   Game.log("command proc drift: Command copies were released; counted %s, now %s x1", before, t.seal)
 end
 
+---------------------------------------------------------------------------
+-- Test: does the game's own combat log tab tell addons anything?
+-- Addons may not register for combat log events, but they may listen in when
+-- Blizzard's combat log window adds a line. This only records what arrives:
+-- whether the text is readable or hidden, its colour, and its timing.
+---------------------------------------------------------------------------
+
+local CLOG_WORDS = { "miss", "dodge", "parr", "block", "resist", "absorb", "evade", "immune" }
+local function clogStats()
+  Game.cdm.clog = Game.cdm.clog or { lines = 0, hidden = 0, readable = 0, misses = 0, nearSwing = 0, samples = {} }
+  return Game.cdm.clog
+end
+
+local function onCombatLogLine(_, text, r, g, b)
+  local st = clogStats()
+  st.lines = st.lines + 1
+  local now = GetTime()
+  if Game.swingAt and now - Game.swingAt <= 1.2 then st.nearSwing = st.nearSwing + 1 end
+  local colour = (not issecret(r) and type(r) == "number") and ("%.2f,%.2f,%.2f"):format(r, g or 0, b or 0) or "hidden"
+  local sample
+  if issecret(text) then
+    st.hidden = st.hidden + 1
+    sample = "HIDDEN"
+  elseif type(text) == "string" then
+    st.readable = st.readable + 1
+    local low = text:lower()
+    for _, w in ipairs(CLOG_WORDS) do
+      if low:find(w, 1, true) then st.misses = st.misses + 1 break end
+    end
+    sample = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1"):sub(1, 90)
+  else
+    sample = type(text)
+  end
+  if #st.samples < 40 then
+    st.samples[#st.samples + 1] = ("%.2fs after swing | colour %s | %s"):format(
+      Game.swingAt and (now - Game.swingAt) or -1, colour, sample)
+  end
+end
+
+function Game.hookCombatLog()
+  if Game.clogHooked then return true end
+  local frame = _G.COMBATLOG or _G.ChatFrame2
+  if not frame or not frame.AddMessage then return false end
+  local ok = pcall(hooksecurefunc, frame, "AddMessage", function(...) pcall(onCombatLogLine, ...) end)
+  Game.clogHooked = ok
+  Game.log("combat log hook %s on %s", ok and "set" or "failed", tostring(frame.GetName and frame:GetName()))
+  return ok
+end
+
 local function onCast(spellID)
   local id = plain(spellID)
   if not id then return end
@@ -686,6 +735,10 @@ function handlers.PLAYER_TARGET_CHANGED()
   if Game.crusaderMark and Game.crusaderMark.id == "target" then Game.crusaderMark = nil end
 end
 
+function handlers.ADDON_LOADED(name)
+  if plain(name) == "Blizzard_CombatLog" then Game.hookCombatLog() end
+end
+
 function handlers.NAME_PLATE_UNIT_ADDED(unit)
   unit = plain(unit)
   if unit then plates[unit] = true end
@@ -760,6 +813,7 @@ function Game.start()
 
   Game.scanSpells()
   Game.scanKeys()
+  Game.hookCombatLog()
   Game.syncBuffs()
   Game.tracker.unsealedWrath = Game.unsealedWrath ~= false
 end
@@ -1014,6 +1068,10 @@ function Game.report()
   add("cooldown manager stacks: agree %d, shows down while counted %d, shows up while none counted %d", c.echoAgree, c.echoDown, c.echoUp)
   add("cooldown manager seal: agree %d, shows down while counted %d, shows up while none counted %d", c.sealAgree, c.sealDown, c.sealUp)
   add("cooldown manager corrections made: %d", c.fixes or 0)
+  local cl = c.clog
+  add("combat log tab: hooked %s, lines %d (readable %d, hidden %d), miss words %d, within 1.2s of a swing %d",
+    tostring(Game.clogHooked), cl and cl.lines or 0, cl and cl.readable or 0, cl and cl.hidden or 0, cl and cl.misses or 0, cl and cl.nearSwing or 0)
+  for _, line in ipairs(cl and cl.samples or {}) do add("  log: %s", line) end
   local both, single = Game.compareLines()
   for _, line in ipairs(both) do add("kill time %s", line) end
   for _, line in ipairs(single) do add("kill time %s", line) end
