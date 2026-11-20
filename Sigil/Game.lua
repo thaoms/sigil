@@ -495,6 +495,7 @@ local function onCast(spellID)
   end
   if Data.SEALS[key] or key == "other" then
     t:castSeal(key, now)
+    if Game.fight then Game.fight.seals = Game.fight.seals + 1 end
     Game.log("seal %s (id %s)", key, tostring(id))
     if ns.onSeal then ns.onSeal(key) end
   elseif Data.cooldowns[key] then
@@ -531,7 +532,14 @@ end
 -- it), so a miss that isn't an ability's undoes the last swing's stack.
 -- In a group other players' misses look the same, so there every swing counts.
 local function onUnitCombat(unit, action, _, amount)
-  if plain(unit) ~= "target" or not MISSES[plain(action) or ""] then return end
+  if plain(unit) ~= "target" then return end
+  -- Solo, every hit on the target is ours: add it up to compare seal patterns.
+  if plain(action) == "WOUND" and Game.fight and not plain(try(IsInGroup)) then
+    local hit = plain(amount)
+    if type(hit) == "number" then Game.fight.damage = Game.fight.damage + hit end
+    return
+  end
+  if not MISSES[plain(action) or ""] then return end
   local now = GetTime()
   local sinceSwing = Game.swingAt and (now - Game.swingAt) or -1
   local sinceAbility = Game.lastAbility and (now - Game.lastAbility) or -1
@@ -557,12 +565,28 @@ handlers.UNIT_COMBAT = onUnitCombat
 
 function handlers.PLAYER_REGEN_DISABLED()
   Game.inCombat = true
+  Game.fight = { start = GetTime(), damage = 0, seals = 0, pattern = ns.db and ns.db.pattern or "burst" }
   Game.compareDue = nil
   Game.stats.fights = (Game.stats.fights or 0) + 1
 end
 
+-- Damage per second and seals cast, kept per seal pattern across sessions.
+local function closeFight()
+  local fight = Game.fight
+  Game.fight = nil
+  if not fight then return end
+  local seconds = GetTime() - fight.start
+  if seconds < 8 or fight.damage <= 0 or not ns.db then return end
+  Game.log("fight: %.0fs, %d damage, %.0f per second, %d seals, pattern %s", seconds, fight.damage, fight.damage / seconds, fight.seals, fight.pattern)
+  ns.db.tally = ns.db.tally or {}
+  local t = ns.db.tally[fight.pattern] or { fights = 0, seconds = 0, damage = 0, seals = 0 }
+  t.fights, t.seconds, t.damage, t.seals = t.fights + 1, t.seconds + seconds, t.damage + fight.damage, t.seals + fight.seals
+  ns.db.tally[fight.pattern] = t
+end
+
 function handlers.PLAYER_REGEN_ENABLED()
   Game.inCombat = false
+  closeFight()
   Game.compareDue = true
   C_Timer.After(0.6, function()
     if Game.inCombat then return end
@@ -765,6 +789,9 @@ function Game.report()
   add("stats: fights %s swings %s misses %s judgements %s holy strikes %s compared %s drifted %s", tostring(s.fights), tostring(s.swings),
     tostring(s.misses), tostring(s.judgement), tostring(s.holy_strike), tostring(s.compared), tostring(s.drifted))
   for name, cd in pairs(Game.tracker.cooldowns) do add("cooldown %s %.1f", name, cd) end
+  for pattern, x in pairs(ns.db and ns.db.tally or {}) do
+    add("pattern %s: %d fights, %.0f damage per second, one seal every %.1fs", pattern, x.fights, x.damage / x.seconds, x.seals > 0 and x.seconds / x.seals or 0)
+  end
   end)
   return out
 end

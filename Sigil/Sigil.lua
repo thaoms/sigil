@@ -94,6 +94,14 @@ local function command(msg)
     ns.toggleDemo()
   elseif word == "check" then
     check()
+  elseif word == "compare" then
+    local any
+    for pattern, x in pairs(db.tally or {}) do
+      any = true
+      ns.say(("%s: %d fights, %.0f damage per second, one seal cast every %.1f seconds"):format(
+        pattern == "even" and "3 and 3" or "3 and 1", x.fights, x.damage / x.seconds, x.seals > 0 and x.seconds / x.seals or 0))
+    end
+    if not any then ns.say("No fights measured yet. Fight solo for at least 8 seconds.") end
   elseif word == "macro" then
     ns.say("Attack macro text:")
     for line in ns.Game.macroBody():gmatch("[^\n]+") do print("  " .. line) end
@@ -105,7 +113,7 @@ local function command(msg)
     db.scale = math.max(0.6, math.min(1.6, tonumber(rest)))
     ns.Halo.applyLayout()
   else
-    ns.say("Commands: /sigil (options), setup, lock, unlock, demo, check, macro, reset, scale 0.6-1.6")
+    ns.say("Commands: /sigil (options), setup, lock, unlock, demo, compare, check, macro, reset, scale 0.6-1.6")
   end
 end
 

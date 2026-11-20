@@ -199,6 +199,7 @@ for i = 1, 3 do
 end
 expect("three stacks: calls righteousness", shown(), "Seal of Righteousness  [4]")
 expect("swing ring was driven", ns.Halo.frame.swing.cooldown ~= nil, true)
+fire("UNIT_COMBAT", "target", "WOUND", "", 150, 1); fire("UNIT_COMBAT", "target", "WOUND", "CRITICAL", 300, 2)
 cast(21084); tick(0.2)
 expect("waiting for release", ns.Halo.frame.why.text, "Your next swing releases the stacks.")
 fire("PLAYER_SWING", 3.3, 0); tick(0.2)
@@ -246,6 +247,8 @@ world.auras[1311703] = { applications = 2, expirationTime = clock + 9 }
 fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 expect("adopted real stacks", ns.Game.tracker.stacks, 2)
 expect("comparison counted", ns.Game.stats.compared, 1)
+expect("damage tallied for the pattern", ns.db.tally.burst.damage, 450)
+SlashCmdList.SIGIL("compare")
 
 -- aura reminders
 world.form = 0; tick(0.2)
