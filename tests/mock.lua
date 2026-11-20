@@ -46,10 +46,6 @@ function CreateFrame(kind, name)
   return f
 end
 UIParent, UIErrorsFrame, UISpecialFrames = widget("Frame"), widget("Frame"), {}
-ChatFrame2 = widget("Frame")
-local clogHooks = {}
-function hooksecurefunc(frame, method, fn) if type(frame) == "table" then clogHooks[#clogHooks + 1] = fn end end
-function CombatLog_OnEvent() end
 Minimap, GameTooltip = widget("Frame"), widget("Frame")
 function Minimap:GetCenter() return 100, 100 end
 function Minimap:GetEffectiveScale() return 1 end
@@ -331,14 +327,6 @@ expect("only one correction per swing", ns.Game.cdm.fixes, fixes)
 echoItem.Applications = nil
 cast(20915); tick(0.2)
 world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
-
--- combat log tab test
-expect("combat log tab hooked", ns.Game.clogHooked, true)
-for _, fn in ipairs(clogHooks) do fn(ChatFrame2, "Your melee swing is dodged by Boar.", 1, 1, 1) end
-for _, fn in ipairs(clogHooks) do fn(ChatFrame2, SECRET, SECRET, SECRET, SECRET) end
-expect("readable line counted", ns.Game.cdm.clog.readable, 1)
-expect("miss word found", ns.Game.cdm.clog.misses, 1)
-expect("hidden line counted", ns.Game.cdm.clog.hidden, 1)
 
 -- commands
 SlashCmdList.SIGIL("check")

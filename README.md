@@ -59,6 +59,7 @@ The game hides buffs, mana, damage and cooldown times from addons during combat.
 - **Seal and stacks** are counted from your own casts and swings. A missed swing stores no stack; Sigil tells swing misses from ability misses by timing.
 - **After every fight** the count is compared with the real buffs and corrected.
 - **Mid-fight**, the game's Cooldown Manager (if enabled, with Unsealed Wrath and Seals tracked) tells Sigil when the stack buff or seal is gone, or when stacks exist that Sigil didn't count. Seal of Command's extra hits also reveal stored Command copies Sigil missed.
+- **Who missed** can't be seen: addons get no combat log on this client, and the Combat Log tab passes no fight lines to them (tested live). Solo every miss on your target is yours, so Sigil handles misses by timing; in a group it counts every swing.
 - **The real stack number** is hidden from addons in combat, both on the buff icons and on the Cooldown Manager (tested live). Sigil can't use it, but it shows it as a small "game" number on the halo by passing the hidden value straight to its own text.
 - **Mana level** comes from which spells the game says you can afford. The bar shows the true value, drawn by the game; Sigil cannot read it.
 
