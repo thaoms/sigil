@@ -165,6 +165,10 @@ end
 fire("ADDON_LOADED", "Sigil")
 fire("PLAYER_LOGIN")
 expect("started", ns.ready, true)
+expect("debug log is off by default", ns.db.debug, false)
+ns.Game.log("swing test"); expect("nothing is recorded with debug off", #SigilCharDB.log, 0)
+ns.Game.log("tick error: test"); expect("errors are always recorded", #SigilCharDB.log, 1)
+SigilCharDB.log = {}; ns.db.debug = true
 ns.db.pattern = "burst"      -- the fight below plays the 3-and-1 pattern
 expect("start error", SigilDB.startError, nil)
 ns.db.hojInMacro = true; ns.Options.apply("hojInMacro")

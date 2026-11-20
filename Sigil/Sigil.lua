@@ -144,7 +144,9 @@ boot:SetScript("OnEvent", function(_, event, name)
     end
     -- keep earlier entries: a reload without fighting must not wipe the log
     SigilCharDB.log = SigilCharDB.log or {}
-    SigilCharDB.log[#SigilCharDB.log + 1] = "--- session " .. (date and date("%H:%M:%S") or "?")
+    if SigilCharDB.debug then
+      SigilCharDB.log[#SigilCharDB.log + 1] = "--- session " .. (date and date("%H:%M:%S") or "?")
+    end
     while #SigilCharDB.log > 400 do table.remove(SigilCharDB.log, 1) end
     ns.db = SigilCharDB
     return

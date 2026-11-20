@@ -74,7 +74,7 @@ Data.manaColor = { { 1.00, 0.42, 0.35 }, { 1.00, 0.70, 0.28 }, { 0.53, 0.71, 1.0
 Data.defaults = {
   scale = 1, locked = false, showWhy = true, onlyCombat = false,
   consecration = "aoe", recover = "seal", upkeep = true, hojCue = true,
-  cue = "ready", attackKeys = 1, hojInMacro = false, aura = "any", pattern = "even", minimap = true, minimapAngle = 215, hideErrors = false, weave = true,
+  cue = "ready", attackKeys = 1, hojInMacro = false, aura = "any", pattern = "even", minimap = true, debug = false, minimapAngle = 215, hideErrors = false, weave = true,
 }
 
 -- Action slot -> binding name.

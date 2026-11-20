@@ -36,9 +36,12 @@ Game.try = try
 
 local C_Spell, C_SpellBook, C_UnitAuras = C_Spell or {}, C_SpellBook or {}, C_UnitAuras or {}
 
+-- Fight details are only recorded with "Debug log" on in the options.
+-- Errors and count mismatches are always recorded.
 function Game.log(fmt, ...)
   local db = SigilCharDB
   if not db then return end
+  if not db.debug and not (fmt:find("error", 1, true) or fmt:find("drift", 1, true)) then return end
   db.log = db.log or {}
   local ok, line = pcall(string.format, fmt, ...)
   db.log[#db.log + 1] = ("%.1f %s"):format(GetTime and GetTime() or 0, ok and line or fmt)
