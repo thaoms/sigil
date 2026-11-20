@@ -142,7 +142,10 @@ boot:SetScript("OnEvent", function(_, event, name)
     for key, value in pairs(Data.defaults) do
       if SigilCharDB[key] == nil then SigilCharDB[key] = value end
     end
-    SigilCharDB.log = {}
+    -- keep earlier entries: a reload without fighting must not wipe the log
+    SigilCharDB.log = SigilCharDB.log or {}
+    SigilCharDB.log[#SigilCharDB.log + 1] = "--- session " .. (date and date("%H:%M:%S") or "?")
+    while #SigilCharDB.log > 400 do table.remove(SigilCharDB.log, 1) end
     ns.db = SigilCharDB
     return
   end
