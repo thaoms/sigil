@@ -671,7 +671,7 @@ function Game.start()
     local saved = ns.db.cdm
     if type(saved) == "table" then
       for k, v in pairs(Game.cdm) do if saved[k] == nil then saved[k] = v end end
-      saved.at, saved.lastEcho = nil, nil
+      saved.at, saved.lastEcho, saved.echoDownRun, saved.sealDownRun = nil, nil, nil, nil
       Game.cdm = saved
     else
       ns.db.cdm = Game.cdm
@@ -739,8 +739,11 @@ end
 
 ---------------------------------------------------------------------------
 -- The game's Cooldown Manager. Its buttons carry one readable bit per
--- tracked buff: up or down. For now Sigil only watches it and records how
--- often it agrees with Sigil's own count; nothing is corrected from it yet.
+-- tracked buff: up or down. In live fights it agreed with Sigil's own count
+-- in 399 of 399 checks, so it is trusted for one correction: when it says a
+-- buff is gone for half a second or more while Sigil still counts it, Sigil
+-- drops it. The other direction (it says up, Sigil counts none) can't say
+-- how many stacks or which seal, so that is only recorded.
 ---------------------------------------------------------------------------
 
 local CDM_VIEWERS = { "EssentialCooldownViewer", "UtilityCooldownViewer", "BuffIconCooldownViewer", "BuffBarCooldownViewer" }
@@ -790,12 +793,35 @@ local function watchCooldownManager(now)
       Game.log("cooldown manager: stacks shown %s, counted x%d", state.echo and "up" or "down", t.stacks)
     end
     c.lastEcho = state.echo
+    if mine and not state.echo then
+      c.echoDownRun = (c.echoDownRun or 0) + 1
+      if c.echoDownRun >= 2 then
+        Game.log("cooldown manager drift: stacks are gone, dropping counted x%d", t.stacks)
+        t.stacks, t.stored, t.stacksExpire, t.undo = 0, nil, nil, nil
+        c.fixes = (c.fixes or 0) + 1
+        c.echoDownRun = 0
+      end
+    else
+      c.echoDownRun = 0
+    end
   end
   if state.seal ~= nil then
     local mine = t.seal ~= nil
     if mine == state.seal then c.sealAgree = c.sealAgree + 1
     elseif mine then c.sealDown = c.sealDown + 1
     else c.sealUp = c.sealUp + 1 end
+    local fresh = t.sealExpires and (t.sealExpires - Tracker.SEAL_DURATION) > now - 0.8   -- just cast: button not lit yet
+    if mine and not state.seal and not fresh then
+      c.sealDownRun = (c.sealDownRun or 0) + 1
+      if c.sealDownRun >= 2 then
+        Game.log("cooldown manager drift: seal is gone, dropping counted %s", tostring(t.seal))
+        t.seal, t.sealExpires = nil, nil
+        c.fixes = (c.fixes or 0) + 1
+        c.sealDownRun = 0
+      end
+    else
+      c.sealDownRun = 0
+    end
   end
 end
 
@@ -910,6 +936,7 @@ function Game.report()
   add("cooldown manager: %s", #shown > 0 and table.concat(shown, ", ") or "no Sigil-relevant buttons found")
   add("cooldown manager stacks: agree %d, shows down while counted %d, shows up while none counted %d", c.echoAgree, c.echoDown, c.echoUp)
   add("cooldown manager seal: agree %d, shows down while counted %d, shows up while none counted %d", c.sealAgree, c.sealDown, c.sealUp)
+  add("cooldown manager corrections made: %d", c.fixes or 0)
   local both, single = Game.compareLines()
   for _, line in ipairs(both) do add("kill time %s", line) end
   for _, line in ipairs(single) do add("kill time %s", line) end

@@ -289,6 +289,12 @@ world.combat = true; fire("PLAYER_REGEN_DISABLED"); tick(1.0)
 expect("cooldown manager button found", ns.Game.cdm.found[200341], "BuffIconCooldownViewer")
 echoItem.auraInstanceID = SECRET; tick(0.6)
 expect("a secret instance id reads as up", ns.Game.readCooldownManager().echo, true)
+cast(20915); fire("PLAYER_SWING", 3.3, 0); tick(1.2)
+expect("stacks kept while the button shows them", ns.Game.tracker.stacks > 0, true)
+local fixesBefore = ns.Game.cdm.fixes or 0
+echoItem.auraInstanceID = nil; tick(1.0)
+expect("stacks dropped once the button says they are gone", ns.Game.tracker.stacks, 0)
+expect("the correction is counted", ns.Game.cdm.fixes, fixesBefore + 1)
 world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 
 -- commands
