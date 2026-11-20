@@ -475,17 +475,26 @@ end
 
 local plates = {}
 
+-- Enemies close to you: alive, attackable, in combat, and within Judgement's
+-- range (about 10 yards), so mobs fighting someone else further away don't
+-- count. If the game gives no range answer for any of them, falls back to
+-- counting every enemy nameplate in combat.
 function Game.enemies()
-  local n, any = 0, false
+  local near, all, any, ranged = 0, 0, false, false
+  local probe = Game.known.judgement or Game.known.hoj
   for unit in pairs(plates) do
     any = true
     if plain(try(UnitExists, unit)) and plain(try(UnitCanAttack, "player", unit))
       and plain(try(UnitAffectingCombat, unit)) and not plain(try(UnitIsDead, unit)) then
-      n = n + 1
+      all = all + 1
+      local inRange = probe and plain(try(C_Spell.IsSpellInRange, probe, unit))
+      if inRange ~= nil then ranged = true end
+      if inRange == true then near = near + 1 end
     end
   end
   if not any then return nil end
-  return n
+  if ranged then return near end
+  return all
 end
 
 ---------------------------------------------------------------------------

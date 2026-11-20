@@ -112,6 +112,7 @@ C_Spell = {
       [20915] = "Seal of Command", [21084] = "Seal of Righteousness", [20166] = "Seal of Wisdom", [7294] = "Retribution Aura", [19740] = "Blessing of Might" }
     return names[id] or ("Spell " .. id)
   end,
+  IsSpellInRange = function(id, unit) if unit and unit:find("nameplate") then return (world.near or {})[unit] end return true end,
   IsSpellUsable = function(id) local c = world.cost[id] or 0 return world.mana >= c, world.mana < c end,
   GetSpellCooldown = function(id)
     local active = (world.cooling[id] or 0) > clock
@@ -340,6 +341,20 @@ echoItem.Applications = nil; tick(0.6)
 expect("without the game's count the arcs come back", ns.Halo.frame.stacks[1].alpha, 1)
 cast(20915); tick(0.2)
 world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
+
+-- enemies near you: only nameplates within range count
+fire("NAME_PLATE_UNIT_ADDED", "nameplate1"); fire("NAME_PLATE_UNIT_ADDED", "nameplate2"); fire("NAME_PLATE_UNIT_ADDED", "nameplate3")
+local oldExists = UnitExists
+UnitExists = function(u) return u:find("nameplate") and true or oldExists(u) end
+world.combat = true
+world.near = { nameplate1 = true, nameplate2 = false, nameplate3 = false }
+expect("only enemies in range are counted", ns.Game.enemies(), 1)
+world.near = { nameplate1 = true, nameplate2 = true, nameplate3 = true }
+expect("a pack next to you counts fully", ns.Game.enemies(), 3)
+world.near = {}
+expect("no range answer: count every enemy in combat", ns.Game.enemies(), 3)
+UnitExists = oldExists; world.near = nil
+world.combat = false
 
 -- dying clears the seal and stacks
 ns.Game.tracker:castSeal("command", clock); ns.Game.tracker.stacks, ns.Game.tracker.stored = 2, "command"
