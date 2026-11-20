@@ -10,7 +10,7 @@ Version 0.2.0, for WoW Forever 1.60.1 (`## Interface: 16001`).
 |---|---|---|
 | ![The halo calling Seal of Command on key 3](docs/screenshots/halo-seal-call.png) | ![The halo calling the Seal of the Crusader opener](docs/screenshots/halo-opener.png) | ![The idle halo with a low mana bar and a drink reminder](docs/screenshots/halo-idle.png) |
 
-![The halo under the character at the start of a fight](docs/screenshots/in-world.png)
+![Sigil in a fight: the halo under the character, calling the opener](docs/screenshots/fullscreen-fight.png)
 
 ## What it does
 
