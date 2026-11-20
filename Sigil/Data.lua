@@ -30,6 +30,8 @@ Data.sealByName = {
   ["Seal of Command"] = "command", ["Seal of Righteousness"] = "righteousness", ["Seal of Wisdom"] = "wisdom",
   ["Seal of Light"] = "light", ["Seal of the Crusader"] = "crusader", ["Seal of Justice"] = "justice", ["Seal of Fury"] = "fury",
 }
+-- Extra hits that seals cause. They show up as casts but are not seal casts.
+Data.SEAL_PROCS = { [20424] = true }
 Data.SEALS = { command = true, righteousness = true, wisdom = true, light = true, crusader = true, justice = true, fury = true }
 Data.UNSEALED_WRATH = 1310735
 -- Buff left behind by each seal under Unsealed Wrath.

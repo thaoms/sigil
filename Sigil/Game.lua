@@ -463,11 +463,14 @@ local function onCast(spellID)
   local t = Game.tracker
   local key = Data.byId[id]
   if not key then
-    -- a rank that isn't in the ID list: recognise the seal by its name
+    -- Not a seal rank we know. A seal's extra hit reports itself under the
+    -- seal's name (Seal of Command's is 20424), so the name alone must never
+    -- count as casting the seal. Record it and move on.
     local name = plain(try(C_Spell.GetSpellName, id))
-    if not (name and name:find("^Seal of")) then return end
-    key = Data.sealByName[name] or "other"
-    Game.log("unlisted seal id %s name %s -> %s", tostring(id), name, key)
+    if name and name:find("^Seal of") and not Data.SEAL_PROCS[id] then
+      Game.log("unlisted seal id %s name %s (ignored)", tostring(id), name)
+    end
+    return
   end
   if Data.SEALS[key] or key == "other" then
     t:castSeal(key, now)

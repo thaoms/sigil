@@ -201,8 +201,7 @@ expect("miss counted", ns.Game.stats.misses, 1)
 world.known[99999] = true
 C_Spell.GetSpellName = (function(old) return function(id) if id == 99999 then return "Seal of Righteousness" end return old(id) end end)(C_Spell.GetSpellName)
 cast(99999); tick(0.1)
-expect("an unlisted seal rank is recognised by name", ns.Game.tracker.seal, "righteousness")
-cast(20915); tick(0.1)
+expect("a seal's extra hit is not mistaken for casting the seal", ns.Game.tracker.seal, "command")
 
 -- secret payloads must not break anything
 fire("UNIT_SPELLCAST_SUCCEEDED", "player", "guid", SECRET)
