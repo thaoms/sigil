@@ -452,14 +452,22 @@ tick(0.3)
 
 -- Hammer of Wrath: never in the macro, marked only when the game allows it
 ns.db.attackKeys = 1
-world.known[24275] = true; world.cost[24275] = 50; world.unusable = { [24275] = true }
+world.known[24275] = true; world.cost[24275] = 50; world.unusable = {}
 ns.Game.scanSpells(); ns.Options.apply("attackKeys")
 expect("hammer of wrath is known", ns.Game.known.how, 24275)
 expect("hammer of wrath stays out of the macro", world.macros.SigilAttack:find("Hammer of Wrath", 1, true), nil)
 expect("holy strike is still in the macro", world.macros.SigilAttack:find("/cast Holy Strike", 1, true) ~= nil, true)
+expect("not trusted before the game has said no once", ns.Game.view().usable.how, nil)
+world.unusable = { [24275] = true }
 expect("no mark on a healthy target", ns.Game.view().usable.how, false)
+expect("the 20% gate is remembered", ns.db.howGate, true)
 world.unusable = {}
 expect("usable on a low target", ns.Game.view().usable.how, true)
+world.unusable = { [24275] = true }; world.cooling[29515] = clock + 1.5
+expect("a reading during the global cooldown is ignored", ns.Game.view().usable.how, true)
+world.cooling[29515] = nil
+expect("read again after it", ns.Game.view().usable.how, false)
+world.unusable = {}
 
 for _, line in ipairs(SigilCharDB.log) do
   if line:find("error") then failed = failed + 1; out("LOGGED " .. line) end

@@ -177,13 +177,35 @@ function Game.afford(key)
 end
 
 -- true when the game says the spell can be cast now (ignoring mana), nil when hidden
+-- The game calls every spell unusable during the global cooldown and while
+-- casting, so only a reading outside those counts; it stands until the next.
+Game.usableSeen = {}
 function Game.usable(key)
   local id = Game.known[key]
   if not id then return nil end
-  local usable, short = try(C_Spell.IsSpellUsable, id)
-  usable, short = plain(usable), plain(short)
-  if usable == nil then return nil end
-  return usable == true or short == true
+  local gcd = field(try(C_Spell.GetSpellCooldown, Data.GCD_SPELL), "isActive")
+  local casting = UnitCastingInfo and plain(try(UnitCastingInfo, "player")) ~= nil
+  if gcd ~= true and not casting then
+    local usable, short = try(C_Spell.IsSpellUsable, id)
+    usable, short = plain(usable), plain(short)
+    if usable == nil then Game.usableSeen[key] = nil
+    else Game.usableSeen[key] = usable == true or short == true end
+  end
+  return Game.usableSeen[key]
+end
+
+-- Hammer of Wrath only works on a low target, and the game's "usable" says
+-- so. Sigil trusts that only after seeing it say "no" once on a live
+-- target: otherwise a client that always says "yes" would light the mark
+-- all fight. Remembered per character. (As the Paladin Toolkit does.)
+function Game.howUsable(liveTarget)
+  local usable = Game.usable("how")
+  if usable == false and liveTarget and not ns.db.howGate then
+    ns.db.howGate = true
+    Game.log("hammer of wrath: the game says not usable on a healthy target, so usable means low enough")
+  end
+  if not ns.db.howGate then return nil end
+  return usable
 end
 
 -- true when off cooldown (the global cooldown doesn't count), nil when unknown
@@ -944,7 +966,8 @@ function Game.view()
   local class = plain(try(UnitClassification, "target"))
   v.elite = class == "elite" or class == "rareelite" or class == "worldboss"
   v.ready = { consecration = Game.ready("consecration") == true, hoj = Game.ready("hoj") == true, how = Game.ready("how") }
-  v.usable = { how = Game.usable("how") }
+  v.usable = {}
+  if v.known.how then v.usable.how = Game.howUsable(v.target) end
   if v.known.how and v.combat and v.usable.how ~= Game.lastHowUsable then
     Game.lastHowUsable = v.usable.how
     Game.log("hammer of wrath usable %s", tostring(v.usable.how))
