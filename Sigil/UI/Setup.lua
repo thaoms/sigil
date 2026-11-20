@@ -45,11 +45,18 @@ local function button(parent, text, width, onClick)
 end
 ns.button = button
 
+-- The buttons Sigil will call, given the chosen seal pair and opener.
 local function items()
-  if ns.db.attackKeys == 2 then
-    return { "judgement", "holy_strike", "command", "righteousness", "consecration", "hoj", "wisdom" }
+  local list = ns.db.attackKeys == 2 and { "judgement", "holy_strike" } or { "attack" }
+  local seen = {}
+  local function add(id)
+    if id and not seen[id] then seen[id] = true; list[#list + 1] = id end
   end
-  return { "attack", "command", "righteousness", "consecration", "hoj", "wisdom" }
+  local primary, secondary = ns.Engine.pair(ns.Game.knownFlags(), ns.db)
+  add(primary); add(secondary)
+  if ns.db.opener and ns.db.opener ~= "off" then add("crusader") end
+  add("consecration"); add("hoj"); add("wisdom")
+  return list
 end
 
 local function learned(id)
@@ -61,15 +68,18 @@ local HELP = {
   attack = "Spam this. It casts whichever attack is ready.",
   judgement = "Press on cooldown.",
   holy_strike = "Press on cooldown.",
-  command = "Your main seal.",
-  righteousness = "Press at 3 stacks.",
+  command = "Halo calls it.",
+  righteousness = "Halo calls it.",
+  light = "Halo calls it.",
+  justice = "Halo calls it.",
+  crusader = "Opener, once per target.",
   consecration = "For packs of enemies.",
   hoj = "Stun just before Judgement.",
   wisdom = "When mana is nearly empty.",
 }
 
 function Setup.create()
-  local f = panel("SigilSetup", W, 420)
+  local f = panel("SigilSetup", W, 490)
   Setup.frame = f
   f.title:SetText("Sigil setup")
 
@@ -79,7 +89,7 @@ function Setup.create()
   f.intro:SetJustifyH("LEFT")
 
   f.rows = {}
-  for i = 1, 7 do
+  for i = 1, 9 do
     local r = CreateFrame("Frame", nil, f)
     r:SetSize(W - 32, ROW)
     r:SetPoint("TOPLEFT", 16, -78 - (i - 1) * (ROW + 4))

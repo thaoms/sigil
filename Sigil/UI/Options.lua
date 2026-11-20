@@ -11,6 +11,10 @@ local CHOICES = {
   cue = { { "ready", "Ready check sound" }, { "warning", "Loud warning" }, { "click", "Soft click" }, { "off", "No sound" } },
   pattern = { { "burst", "3 Command, 1 Righteousness" }, { "even", "3 Command, 3 Righteousness" } },
   stun = { { "off", "Manual" }, { "solo", "Automatic when solo" }, { "always", "Always automatic" } },
+  primary = { { "auto", "Automatic" }, { "command", "Seal of Command" }, { "righteousness", "Seal of Righteousness" } },
+  secondary = { { "auto", "Automatic" }, { "righteousness", "Seal of Righteousness" }, { "command", "Seal of Command" },
+    { "wisdom", "Seal of Wisdom" }, { "light", "Seal of Light" }, { "justice", "Seal of Justice" }, { "none", "None (one seal)" } },
+  opener = { { "off", "Off" }, { "elite", "Elites and bosses" }, { "always", "Every target" } },
   attackKeys = { { 1, "One key (Attack macro)" }, { 2, "Two keys (Judgement, Holy Strike)" } },
 }
 
@@ -19,7 +23,10 @@ local ROWS = {
   { "check", "showWhy", "Show the reason line", "A short line under the halo saying why." },
   { "check", "onlyCombat", "Only when fighting", "Hide the halo when you have no target." },
   { "check", "weave", "Swap seals for Unsealed Wrath", "Turn off to stay on one seal." },
+  { "cycle", "primary", "Main seal", "The seal you build stacks on first." },
+  { "cycle", "secondary", "Second seal", "The seal you swap to." },
   { "cycle", "pattern", "Seal pattern", "3 and 3 costs less mana." },
+  { "cycle", "opener", "Crusader opener", "Judge Seal of the Crusader first." },
   { "cycle", "attackKeys", "Attack keys", "Use two if the macro misfires." },
   { "cycle", "consecration", "Consecration", "When Sigil marks it." },
   { "cycle", "recover", "When mana runs low", "How Sigil helps you recover." },
@@ -50,6 +57,7 @@ function Options.apply(key)
     if db.hideErrors then pcall(UIErrorsFrame.UnregisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE")
     else pcall(UIErrorsFrame.RegisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE") end
   end
+  if key == "primary" or key == "secondary" or key == "opener" then ns.Game.scanKeys() end
   if key == "attackKeys" or key == "stun" then
     if db.attackKeys ~= 2 then ns.Game.macroState = ns.Game.ensureMacro() end
     ns.Game.scanKeys()
@@ -58,16 +66,21 @@ function Options.apply(key)
 end
 
 function Options.create()
-  local f = ns.panel("SigilOptions", 400, 64 + #ROWS * 34 + 44)
+  -- two columns, so the window stays short enough for any screen
+  local COL, ROW_H = 400, 34
+  local perColumn = math.ceil(#ROWS / 2)
+  local f = ns.panel("SigilOptions", COL * 2, 64 + perColumn * ROW_H + 44)
   Options.frame = f
   f.title:SetText("Sigil options")
   f.controls = {}
 
   for i, row in ipairs(ROWS) do
     local kind, key, title, help = row[1], row[2], row[3], row[4]
-    local y = -44 - (i - 1) * 34
+    local column = i > perColumn and 1 or 0
+    local x = column * COL
+    local y = -44 - ((i - 1) % perColumn) * ROW_H
     local name = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    name:SetPoint("TOPLEFT", 16, y)
+    name:SetPoint("TOPLEFT", x + 16, y)
     name:SetText(title)
     local sub = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     sub:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -2)
@@ -78,7 +91,7 @@ function Options.create()
     if kind == "check" then
       local cb = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
       cb:SetSize(24, 24)
-      cb:SetPoint("TOPRIGHT", -16, y + 2)
+      cb:SetPoint("TOPRIGHT", f, "TOPLEFT", x + COL - 16, y + 2)
       cb:SetScript("OnClick", function(self)
         ns.db[key] = self:GetChecked() and true or false
         Options.apply(key)
@@ -93,12 +106,12 @@ function Options.create()
         self:SetText(labelFor(key, ns.db[key]))
         Options.apply(key)
       end)
-      b:SetPoint("TOPRIGHT", -16, y)
+      b:SetPoint("TOPRIGHT", f, "TOPLEFT", x + COL - 16, y)
       f.controls[key] = b
     end
   end
 
-  local bottom = -44 - #ROWS * 34 - 4
+  local bottom = -44 - perColumn * ROW_H - 4
   local size = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   size:SetPoint("TOPLEFT", 16, bottom)
   f.sizeText = size
@@ -108,9 +121,13 @@ function Options.create()
     Options.refresh()
   end
   local plus = ns.button(f, "+", 28, function() resize(0.1) end)
-  plus:SetPoint("TOPRIGHT", -16, bottom + 4)
+  plus:SetPoint("TOPLEFT", 150, bottom + 4)
   local minus = ns.button(f, "-", 28, function() resize(-0.1) end)
   minus:SetPoint("RIGHT", plus, "LEFT", -4, 0)
+  plus:ClearAllPoints()
+  minus:ClearAllPoints()
+  minus:SetPoint("TOPLEFT", 120, bottom + 4)
+  plus:SetPoint("LEFT", minus, "RIGHT", 4, 0)
 
   local setup = ns.button(f, "Setup", 80, function() ns.Setup.show() end)
   setup:SetPoint("BOTTOMLEFT", 16, 12)

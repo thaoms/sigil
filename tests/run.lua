@@ -61,6 +61,43 @@ test("swap that can't beat the next swing is called for after it", function()
   eq(Engine.decide(v, {}).main.urgent, true)
 end)
 
+test("seal pair can be chosen", function()
+  local t = Tracker.new()
+  local known = { command = true, righteousness = true, light = true, wisdom = true }
+  local S = { primary = "righteousness", secondary = "light" }
+  eq(Engine.decide(view(t, { now = 0, known = known }), S).main.id, "righteousness")
+  t:castSeal("righteousness", 0)
+  t:swing(1, 3.3); t:swing(4.3, 3.3); t:swing(7.6, 3.3)
+  eq(Engine.decide(view(t, { now = 7.7, known = known }), S).main.id, "light")
+  local p, s2 = Engine.pair(known, { secondary = "none" })
+  eq(p, "command"); eq(s2, nil)
+  p, s2 = Engine.pair({ righteousness = true }, { primary = "command" })
+  eq(p, "righteousness", "falls back when the chosen seal isn't known")
+  -- Seal of Wisdom as the second seal is woven, not treated as mana recovery
+  S = { secondary = "wisdom" }
+  t = Tracker.new(); t:castSeal("command", 0)
+  t:swing(1, 3.3); t:swing(4.3, 3.3); t:swing(7.6, 3.3)
+  eq(Engine.decide(view(t, { now = 7.7, known = known }), S).main.id, "wisdom")
+  t:castSeal("wisdom", 8); t:swing(10.9, 3.3)
+  eq(Engine.decide(view(t, { now = 11, known = known }), { secondary = "wisdom", pattern = "burst" }).main.id, "command")
+end)
+
+test("crusader opener", function()
+  local t = Tracker.new()
+  local known = { command = true, righteousness = true, crusader = true }
+  local S = { opener = "elite" }
+  eq(Engine.decide(view(t, { now = 0, known = known }), S).main.id, "command", "not an elite: no opener")
+  local d = Engine.decide(view(t, { now = 0, known = known, elite = true }), S)
+  eq(d.main.id, "crusader")
+  t:castSeal("crusader", 0)
+  d = Engine.decide(view(t, { now = 1, known = known, elite = true }), S)
+  eq(d.main.id, "attack"); eq(d.main.why, "Judgement marks the target.")
+  d = Engine.decide(view(t, { now = 2, known = known, elite = true, crusaderDone = true }), S)
+  eq(d.main.id, "command"); eq(d.main.why, "Target marked. On to your main seal.")
+  eq(Engine.decide(view(Tracker.new(), { now = 0, known = known }), { opener = "always" }).main.id, "crusader")
+  eq(Engine.decide(view(t, { now = 2, known = known, elite = true }), { opener = "off" }).main.id, "attack", "off: crusader is left alone")
+end)
+
 test("even pattern: three of each seal", function()
   local t = Tracker.new()
   local S = { pattern = "even" }

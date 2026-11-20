@@ -25,6 +25,24 @@ end
 --   judgementRemains      seconds until Judgement is ready
 --   enemies               enemies in melee, nil when unknown
 --   auraMissing, blessingMissing
+-- Which two seals to weave. "auto" means Command then Righteousness, falling
+-- back to whatever the character knows.
+function Engine.pair(known, settings)
+  local primary = settings.primary
+  if not primary or primary == "auto" or not known[primary] then
+    primary = known.command and "command" or (known.righteousness and "righteousness" or nil)
+  end
+  local secondary = settings.secondary
+  if secondary == "none" then
+    secondary = nil
+  elseif not secondary or secondary == "auto" or not known[secondary] then
+    secondary = (primary == "command" and known.righteousness) and "righteousness"
+      or (primary == "righteousness" and known.command) and "command" or nil
+  end
+  if secondary == primary then secondary = nil end
+  return primary, secondary
+end
+
 function Engine.decide(view, settings)
   local known = view.known or {}
   local afford = view.afford or {}
@@ -32,10 +50,14 @@ function Engine.decide(view, settings)
   local level = view.manaLevel or COMFORTABLE
   local seal, stored, stacks = view.seal, view.stored, view.stacks or 0
 
-  local primary = known.command and "command" or (known.righteousness and "righteousness" or nil)
-  local secondary = (primary == "command" and known.righteousness) and "righteousness" or nil
+  local primary, secondary = Engine.pair(known, settings)
   local weave = secondary and view.unsealedWrath ~= false and settings.weave ~= false
-  local useWisdom = known.wisdom and settings.recover ~= "blessing"
+  -- Seal of Wisdom as the low-mana fallback, unless it is already one of the pair
+  local useWisdom = known.wisdom and settings.recover ~= "blessing" and primary ~= "wisdom" and secondary ~= "wisdom"
+  -- Crusader opener: judge Seal of the Crusader once per target before the weave
+  local opener = settings.opener
+  local wantOpener = known.crusader and view.target and not view.crusaderDone
+    and (opener == "always" or (opener == "elite" and view.elite))
 
   local out = { mana = level, stacks = stacks, stored = stored, seal = seal, side = {}, marks = {} }
   local active = view.combat or view.target
@@ -50,10 +72,19 @@ function Engine.decide(view, settings)
       end
       return nil
     end
+    if wantOpener then
+      if seal ~= "crusader" then
+        return call("crusader", "Opener: Judgement will mark the target.", true)
+      end
+      return nil              -- the Attack key's Judgement applies the mark
+    end
     if not seal then
       return call(primary, "No seal active.", true)
     end
-    if seal == "wisdom" then
+    if seal == "crusader" and opener and opener ~= "off" then
+      return call(primary, "Target marked. On to your main seal.", true)
+    end
+    if seal == "wisdom" and useWisdom then
       if level == COMFORTABLE or not useWisdom then
         return call(primary, "Mana is back. Return to your seal.", false)
       end
@@ -118,8 +149,10 @@ function Engine.decide(view, settings)
       why = "Your next swing releases the stacks."
     elseif weave and level == COMFORTABLE and (seal == primary or (seal == secondary and settings.pattern == "even")) then
       why = ("Building stacks: %d of 3."):format(stored == seal and stacks or 0)
-    elseif level == EMPTY and seal == "wisdom" then
+    elseif level == EMPTY and seal == "wisdom" and useWisdom then
       why = "Recovering mana."
+    elseif wantOpener and seal == "crusader" then
+      why = "Judgement marks the target."
     end
     out.main = call("attack", why)
   end

@@ -75,6 +75,8 @@ for i = 1, 12 do world.bindings["ACTIONBUTTON" .. i] = tostring(i % 10) end
 function UnitClass() return "Paladin", "PALADIN" end
 function UnitLevel() return 40 end
 function UnitName() return "Plains Boar" end
+function UnitGUID() return "Creature-0-1" end
+function UnitClassification() return world.classification or "normal" end
 function UnitExists(u) return (u == "target" and world.target) or false end
 function UnitCanAttack() return true end
 function UnitIsDead() return false end
@@ -263,6 +265,16 @@ local both, single = ns.Game.compareLines()
 expect("mob fought with both patterns", both[1], "Both (40): 3 and 1 14.0s over 1 fight, 3 and 3 15.0s over 2 fights")
 expect("mob fought with one pattern", single[1], "Only Even (40): 3 and 3 12.0s over 1 fight")
 SlashCmdList.SIGIL("compare")
+
+-- crusader opener on an elite
+world.known[21082] = true; world.cost[21082] = 90; ns.Game.scanSpells()
+ns.db.opener = "elite"; world.classification = "elite"
+ns.Game.tracker.seal = nil; world.target = true; tick(0.2)
+expect("elite target: opener is called", ns.Halo.frame.name.text, "Spell 21082")
+cast(21082); tick(0.2); cast(20271, 8); tick(0.2)
+expect("after the marking Judgement: main seal", ns.Halo.frame.name.text, "Seal of Command")
+cast(20915); tick(0.2)
+ns.db.opener = "off"; world.classification = nil
 
 -- aura reminders
 world.form = 0; tick(0.2)

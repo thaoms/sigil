@@ -488,6 +488,20 @@ end
 -- Events
 ---------------------------------------------------------------------------
 
+-- The Crusader mark on the target can't be read in combat. Sigil remembers
+-- which target it judged with Seal of the Crusader. The mark lasts 40 seconds
+-- and your own hits keep refreshing it.
+local CRUSADER_LASTS = 40
+local function targetId()
+  return plain(try(UnitGUID, "target")) or "target"
+end
+function Game.crusaderDone(now)
+  local mark = Game.crusaderMark
+  if not mark then return false end
+  if now > mark.untilTime or mark.id ~= targetId() then return false end
+  return true
+end
+
 local MISSES = { MISS = true, DODGE = true, PARRY = true }
 
 local function onCast(spellID)
@@ -515,6 +529,12 @@ local function onCast(spellID)
     Game.castAt = Game.castAt or {}
     Game.castAt[key] = now
     Game.lastAbility = now
+    if key == "judgement" and t.seal == "crusader" then
+      Game.crusaderMark = { id = targetId(), untilTime = now + CRUSADER_LASTS }
+      Game.log("crusader mark applied")
+    elseif key == "holy_strike" and Game.crusaderMark and Game.crusaderMark.id == targetId() then
+      Game.crusaderMark.untilTime = now + CRUSADER_LASTS
+    end
     Game.log("cast %s", key)
     if key == "judgement" or key == "holy_strike" then
       Game.stats[key] = (Game.stats[key] or 0) + 1
@@ -533,6 +553,9 @@ local function onSwing(duration, swingType)
   Game.stats.swings = (Game.stats.swings or 0) + 1
   Game.log("swing %.2fs -> %s x%d%s", duration or 0, tostring(Game.tracker.stored), Game.tracker.stacks,
     released and (" released " .. released.seal .. " x" .. released.count) or "")
+  if Game.crusaderMark and Game.crusaderMark.id == targetId() and now < Game.crusaderMark.untilTime then
+    Game.crusaderMark.untilTime = now + CRUSADER_LASTS
+  end
   if released and ns.onRelease then ns.onRelease(released) end
   if ns.onSwing then ns.onSwing(now, Game.tracker.swingSpeed) end
 end
@@ -633,6 +656,11 @@ function handlers.PLAYER_REGEN_ENABLED()
     Game.scanKeys()
     if ns.refreshSetup then ns.refreshSetup() end
   end)
+end
+
+-- Where the target can't be identified (dungeons), a new target means a new mark.
+function handlers.PLAYER_TARGET_CHANGED()
+  if Game.crusaderMark and Game.crusaderMark.id == "target" then Game.crusaderMark = nil end
 end
 
 function handlers.NAME_PLATE_UNIT_ADDED(unit)
@@ -822,6 +850,13 @@ local function watchCooldownManager(now)
   end
 end
 
+local FLAG_KEYS = { "command", "righteousness", "wisdom", "light", "justice", "crusader", "consecration", "hoj" }
+function Game.knownFlags()
+  local flags = {}
+  for _, key in ipairs(FLAG_KEYS) do flags[key] = Game.known[key] ~= nil end
+  return flags
+end
+
 -- One picture of the fight for the engine.
 function Game.view()
   local now = GetTime()
@@ -839,14 +874,11 @@ function Game.view()
     and plain(try(UnitIsDead, "target")) ~= true
   v.manaLevel = Game.manaLevel()
   v.unsealedWrath = Game.unsealedWrath
-  v.known = {
-    command = Game.known.command ~= nil, righteousness = Game.known.righteousness ~= nil,
-    wisdom = Game.known.wisdom ~= nil, consecration = Game.known.consecration ~= nil, hoj = Game.known.hoj ~= nil,
-  }
-  v.afford = {
-    command = Game.afford("command"), righteousness = Game.afford("righteousness"),
-    wisdom = Game.afford("wisdom"), consecration = Game.afford("consecration"), hoj = Game.afford("hoj"),
-  }
+  v.known, v.afford = Game.knownFlags(), {}
+  for key in pairs(v.known) do v.afford[key] = Game.afford(key) end
+  v.crusaderDone = Game.crusaderDone(now)
+  local class = plain(try(UnitClassification, "target"))
+  v.elite = class == "elite" or class == "rareelite" or class == "worldboss"
   v.ready = { consecration = Game.ready("consecration") == true, hoj = Game.ready("hoj") == true }
   local judgementReady = Game.ready("judgement")
   v.judgementRemains = judgementReady and 0 or t:remains("judgement", now)

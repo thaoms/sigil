@@ -10,7 +10,8 @@ Version 0.2.0, for WoW Forever 1.60.1 (`## Interface: 16001`).
 
 - **One halo.** The spell icon and key to press in the middle, three arcs for Unsealed Wrath stacks, an outer ring for your swing timer, a mana bar underneath.
 - **Quiet until it matters.** All attacks sit on one macro key, so the halo shows "Attack" and only pulses and plays a sound when a seal key is needed.
-- **Seal weave.** Build three stacks on Seal of Command, swap to Seal of Righteousness, release. Two patterns: 3 and 3 (default, cheaper on mana) or 3 and 1.
+- **Seal weave.** Build three stacks on one seal, swap to the other, release. Command and Righteousness by default; the pair is configurable. Two patterns: 3 and 3 (default, cheaper on mana) or 3 and 1.
+- **Crusader opener** (optional). Judge Seal of the Crusader first, on every target or only on elites and bosses.
 - **Mana.** A true mana bar, plus a three-level estimate that drops Consecration and the swap when low and calls Seal of Wisdom when nearly empty.
 - **Reminders.** No aura, wrong aura, no blessing, drink before the next pull.
 - **Side marks.** Consecration on packs, Hammer of Justice just before Judgement.

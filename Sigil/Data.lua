@@ -49,6 +49,7 @@ Data.label = {
   attack = "Attack", command = "Seal of Command", righteousness = "Seal of Righteousness",
   wisdom = "Seal of Wisdom", consecration = "Consecration", hoj = "Hammer of Justice",
   judgement = "Judgement", holy_strike = "Holy Strike", idle = "",
+  crusader = "Seal of the Crusader", light = "Seal of Light", justice = "Seal of Justice",
   ret_aura = "Retribution Aura", devo_aura = "Devotion Aura", conc_aura = "Concentration Aura",
 }
 Data.glyph = {
@@ -70,7 +71,7 @@ Data.manaColor = { { 1.00, 0.42, 0.35 }, { 1.00, 0.70, 0.28 }, { 0.53, 0.71, 1.0
 Data.defaults = {
   scale = 1, locked = false, showWhy = true, onlyCombat = false,
   consecration = "aoe", recover = "seal", upkeep = true, hojCue = true,
-  cue = "ready", attackKeys = 1, stun = "off", aura = "any", pattern = "even", minimap = true, debug = false, minimapAngle = 215, hideErrors = false, weave = true,
+  cue = "ready", attackKeys = 1, stun = "off", primary = "auto", secondary = "auto", opener = "off", aura = "any", pattern = "even", minimap = true, debug = false, minimapAngle = 215, hideErrors = false, weave = true,
 }
 
 -- Action slot -> binding name.
