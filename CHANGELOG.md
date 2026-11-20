@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0-beta3
+
+- The stack arcs are now drawn by the game from your real Unsealed Wrath stacks, in the seal's colour, so they stay right in combat, solo or in a group. No Cooldown Manager setup needed for this
+- The Consecration mark only counts enemies near you (Judgement range), and stays on at low mana for pulls of 3 or more
+- Your seal and stacks are cleared when you die
+- Simpler stack counting with one miss rule everywhere, corrected mid-fight by the Cooldown Manager (if Unsealed Wrath is tracked there) and by Seal of Command extra hits
+
+Known limits:
+
+- The swap call still runs on Sigil's own count, which can be a swing off in a group; the arcs always show the real number
+- English game client only for now
+- Tested solo; groups, dungeons and raids are not tested yet
+
 ## 0.2.0-beta2
 
 First public beta. For Retribution Paladins on WoW Forever 1.60.1.

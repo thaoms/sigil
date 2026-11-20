@@ -21,8 +21,9 @@ A setup window opens on your first login. It shows which buttons Sigil uses and 
 
 ## Good to know
 
-- WoW Forever hides buffs, mana and damage from addons in combat. So Sigil counts your stacks from your own swings and checks itself against the real buff after every fight. Solo this has been right every time for me. In a group I think it can drift a bit
-- If you enable the Cooldown Manager and track Unsealed Wrath and Seals there, Sigil uses that to correct itself during a fight
+- WoW Forever hides buffs, mana and damage from addons in combat. The stack arcs on the halo are drawn by the game itself, so they always show your real stacks
+- Sigil can't read that number, so it decides when to swap from its own count of your swings. It checks itself against the real buff after every fight. Solo this has been right every time for me. In a group it can be a swing off now and then; the arcs show the truth
+- If you enable the Cooldown Manager and track Unsealed Wrath and Seals there, Sigil uses that to correct its count during a fight
 - English client only for now
 - Retribution only
 
