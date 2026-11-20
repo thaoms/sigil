@@ -245,12 +245,17 @@ function Game.macroBody()
   local lines = { "#showtooltip", "/startattack" }
   -- With the stun first, a press where both are ready stuns and then judges
   -- the stunned target in the same instant (Judgement skips the global cooldown).
+  -- "solo" uses the macro condition [nogroup]: the stun only fires when you
+  -- are not in a party or raid, so dungeons and battlegrounds stay manual.
   local order = { "judgement", "how", "holy_strike", "exorcism" }
-  if ns.db and ns.db.hojInMacro then table.insert(order, 1, "hoj") end
+  local stun = ns.db and ns.db.stun
+  if stun == "solo" or stun == "always" then table.insert(order, 1, "hoj") end
   for _, key in ipairs(order) do
     if Game.known[key] then
       local name = plain(try(C_Spell.GetSpellName, Game.known[key]))
-      if name then lines[#lines + 1] = "/cast " .. name end
+      if name then
+        lines[#lines + 1] = (key == "hoj" and stun == "solo") and ("/cast [nogroup] " .. name) or ("/cast " .. name)
+      end
     end
   end
   return table.concat(lines, "\n")
@@ -846,6 +851,7 @@ function Game.view()
   local judgementReady = Game.ready("judgement")
   v.judgementRemains = judgementReady and 0 or t:remains("judgement", now)
   if judgementReady == false and v.judgementRemains == 0 then v.judgementRemains = 99 end
+  v.inGroup = plain(try(IsInGroup)) == true
   v.enemies = Game.enemies()
   if Game.fight and v.enemies and v.enemies > (Game.fight.enemies or 0) then Game.fight.enemies = v.enemies end
   local aura = Game.auraState()

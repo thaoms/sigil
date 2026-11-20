@@ -171,9 +171,12 @@ ns.Game.log("tick error: test"); expect("errors are always recorded", #SigilChar
 SigilCharDB.log = {}; ns.db.debug = true
 ns.db.pattern = "burst"      -- the fight below plays the 3-and-1 pattern
 expect("start error", SigilDB.startError, nil)
-ns.db.hojInMacro = true; ns.Options.apply("hojInMacro")
-expect("stun can be added to the macro", world.macros.SigilAttack, "#showtooltip\n/startattack\n/cast Hammer of Justice\n/cast Judgement\n/cast Holy Strike\n/cast Exorcism")
-ns.db.hojInMacro = false; ns.Options.apply("hojInMacro")
+expect("stun is manual by default", ns.db.stun, "off")
+ns.db.stun = "solo"; ns.Options.apply("stun")
+expect("solo stun uses the nogroup condition", world.macros.SigilAttack, "#showtooltip\n/startattack\n/cast [nogroup] Hammer of Justice\n/cast Judgement\n/cast Holy Strike\n/cast Exorcism")
+ns.db.stun = "always"; ns.Options.apply("stun")
+expect("always stun has no condition", world.macros.SigilAttack:find("/cast Hammer of Justice", 1, true) ~= nil, true)
+ns.db.stun = "off"; ns.Options.apply("stun")
 expect("macro created", world.macros.SigilAttack, "#showtooltip\n/startattack\n/cast Judgement\n/cast Holy Strike\n/cast Exorcism")
 expect("holy strike resolves to highest known rank", ns.Game.known.holy_strike, 1866)
 expect("unsealed wrath assumed", ns.Game.unsealedWrathHow, "assumed")

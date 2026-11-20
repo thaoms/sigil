@@ -10,6 +10,7 @@ local CHOICES = {
   aura = { { "any", "Any aura" }, { "ret_aura", "Retribution Aura" }, { "devo_aura", "Devotion Aura" }, { "conc_aura", "Concentration Aura" } },
   cue = { { "ready", "Ready check sound" }, { "warning", "Loud warning" }, { "click", "Soft click" }, { "off", "No sound" } },
   pattern = { { "burst", "3 Command, 1 Righteousness" }, { "even", "3 Command, 3 Righteousness" } },
+  stun = { { "off", "Manual" }, { "solo", "Automatic when solo" }, { "always", "Always automatic" } },
   attackKeys = { { 1, "One key (Attack macro)" }, { 2, "Two keys (Judgement, Holy Strike)" } },
 }
 
@@ -25,7 +26,7 @@ local ROWS = {
   { "check", "upkeep", "Aura and blessing reminders", "Shown only when one is missing." },
   { "cycle", "aura", "Aura to keep up", "Warns when it's off or another is on." },
   { "check", "hojCue", "Hammer of Justice mark", "Shown just before Judgement is ready." },
-  { "check", "hojInMacro", "Stun from the Attack key", "Adds Hammer of Justice to the macro: used whenever ready." },
+  { "cycle", "stun", "Hammer of Justice", "Solo: the Attack key stuns, not in groups." },
   { "cycle", "cue", "Swap sound", "Click to hear each one." },
   { "check", "minimap", "Minimap button", "Left-click opens this window." },
   { "check", "debug", "Debug log", "Records every fight in detail. Saved on /reload." },
@@ -49,7 +50,7 @@ function Options.apply(key)
     if db.hideErrors then pcall(UIErrorsFrame.UnregisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE")
     else pcall(UIErrorsFrame.RegisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE") end
   end
-  if key == "attackKeys" or key == "hojInMacro" then
+  if key == "attackKeys" or key == "stun" then
     if db.attackKeys ~= 2 then ns.Game.macroState = ns.Game.ensureMacro() end
     ns.Game.scanKeys()
   end

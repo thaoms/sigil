@@ -14,6 +14,7 @@ Version 0.2.0, for WoW Forever 1.60.1 (`## Interface: 16001`).
 - **Mana.** A true mana bar, plus a three-level estimate that drops Consecration and the swap when low and calls Seal of Wisdom when nearly empty.
 - **Reminders.** No aura, wrong aura, no blessing, drink before the next pull.
 - **Side marks.** Consecration on packs, Hammer of Justice just before Judgement.
+- **Stun your way.** Hammer of Justice is manual by default. It can also fire from the Attack key only while solo, staying manual in groups, or always.
 
 ## Install
 

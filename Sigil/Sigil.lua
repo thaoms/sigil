@@ -148,6 +148,9 @@ boot:SetScript("OnEvent", function(_, event, name)
       SigilCharDB.log[#SigilCharDB.log + 1] = "--- session " .. (date and date("%H:%M:%S") or "?")
     end
     while #SigilCharDB.log > 400 do table.remove(SigilCharDB.log, 1) end
+    -- settings renamed since 0.2.0
+    if SigilCharDB.hojInMacro then SigilCharDB.stun = "always" end
+    SigilCharDB.hojInMacro, SigilCharDB.sound = nil, nil
     ns.db = SigilCharDB
     return
   end
