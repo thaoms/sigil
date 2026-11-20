@@ -10,6 +10,8 @@ Version 0.2.0, for WoW Forever 1.60.1 (`## Interface: 16001`).
 |---|---|---|
 | ![The halo calling Seal of Command on key 3](docs/screenshots/halo-seal-call.png) | ![The halo calling the Seal of the Crusader opener](docs/screenshots/halo-opener.png) | ![The idle halo with a low mana bar and a drink reminder](docs/screenshots/halo-idle.png) |
 
+![The halo under the character at the start of a fight](docs/screenshots/in-world.png)
+
 ## What it does
 
 - **One halo.** The spell icon and key to press in the middle, three arcs for Unsealed Wrath stacks, an outer ring for your swing timer, a mana bar underneath.
