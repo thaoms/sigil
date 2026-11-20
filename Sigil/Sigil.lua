@@ -137,6 +137,7 @@ boot:SetScript("OnEvent", function(_, event, name)
     ns.onSwing = ns.Halo.swing
     ns.onRelease = ns.Halo.release
     ns.Options.register()
+    pcall(ns.MinimapButton.create)
     if ns.db.hideErrors then ns.Options.apply("hideErrors") end
     -- the macro list may not be loaded this early: wait before creating one
     C_Timer.After(4, function()

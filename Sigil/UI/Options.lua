@@ -24,6 +24,7 @@ local ROWS = {
   { "check", "hojCue", "Hammer of Justice mark", "Shown just before Judgement is ready." },
   { "check", "hojInMacro", "Stun from the Attack key", "Adds Hammer of Justice to the macro: used whenever ready." },
   { "check", "sound", "Swap sound", "A soft click when it's time to swap seals." },
+  { "check", "minimap", "Minimap button", "Left-click opens this window." },
   { "check", "hideErrors", "Hide red error text", "Hides ALL red error messages, e.g. \"not ready yet\"." },
 }
 
@@ -37,6 +38,7 @@ end
 function Options.apply(key)
   local db = ns.db
   if key == "locked" or key == "scale" then ns.Halo.applyLayout() end
+  if key == "minimap" then ns.MinimapButton.apply() end
   if key == "hideErrors" and UIErrorsFrame then
     if db.hideErrors then pcall(UIErrorsFrame.UnregisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE")
     else pcall(UIErrorsFrame.RegisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE") end

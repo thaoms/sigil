@@ -46,6 +46,10 @@ function CreateFrame(kind, name)
   return f
 end
 UIParent, UIErrorsFrame, UISpecialFrames = widget("Frame"), widget("Frame"), {}
+Minimap, GameTooltip = widget("Frame"), widget("Frame")
+function Minimap:GetCenter() return 100, 100 end
+function Minimap:GetEffectiveScale() return 1 end
+function GetCursorPosition() return 100, 200 end
 function GetTime() return clock end
 function issecretvalue(v) return v == SECRET end
 function print() end   -- the addon's chat output
@@ -250,6 +254,18 @@ ns.db.aura = "ret_aura"; world.form = 1; tick(0.2)
 expect("wrong aura is reported", (ns.Halo.frame.marks.text or ""):find("Switch to Retribution Aura", 1, true) ~= nil, true)
 world.form = 2; tick(0.2)
 expect("right aura: no reminder", (ns.Halo.frame.marks.text or ""):find("aura", 1, true), nil)
+
+-- minimap button
+local mb = SigilMinimapButton
+expect("minimap button exists", mb ~= nil and mb.shown, true)
+if ns.Options.frame then ns.Options.frame:Hide() end; mb.scripts.OnClick(mb, "LeftButton")
+expect("left-click opens options", ns.Options.frame.shown, true)
+mb.scripts.OnClick(mb, "RightButton")
+expect("right-click opens setup", ns.Setup.frame.shown, true)
+mb.scripts.OnEnter(mb); mb.scripts.OnLeave(mb)
+mb.scripts.OnDragStart(mb); mb.scripts.OnUpdate(mb); mb.scripts.OnDragStop(mb)
+expect("dragging moves it around the edge", math.floor(ns.db.minimapAngle + 0.5), 90)
+Sigil_OnAddonCompartmentClick()
 
 -- commands
 SlashCmdList.SIGIL("check")
