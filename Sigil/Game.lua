@@ -463,18 +463,22 @@ local function onCast(spellID)
   local t = Game.tracker
   local key = Data.byId[id]
   if not key then
+    -- a rank that isn't in the ID list: recognise the seal by its name
     local name = plain(try(C_Spell.GetSpellName, id))
-    if name and name:find("^Seal of") then key = "other" else return end
+    if not (name and name:find("^Seal of")) then return end
+    key = Data.sealByName[name] or "other"
+    Game.log("unlisted seal id %s name %s -> %s", tostring(id), name, key)
   end
   if Data.SEALS[key] or key == "other" then
     t:castSeal(key, now)
-    Game.log("seal %s", key)
+    Game.log("seal %s (id %s)", key, tostring(id))
     if ns.onSeal then ns.onSeal(key) end
   elseif Data.cooldowns[key] then
     t:castSpell(key, now, Data.OFF_GCD[key])
     Game.castAt = Game.castAt or {}
     Game.castAt[key] = now
     Game.lastAbility = now
+    Game.log("cast %s", key)
     if key == "judgement" or key == "holy_strike" then
       Game.stats[key] = (Game.stats[key] or 0) + 1
     end
@@ -490,24 +494,22 @@ local function onSwing(duration, swingType)
   local released = Game.tracker:swing(now, duration)
   Game.swingAt = now
   Game.stats.swings = (Game.stats.swings or 0) + 1
+  Game.log("swing %.2fs -> %s x%d%s", duration or 0, tostring(Game.tracker.stored), Game.tracker.stacks,
+    released and (" released " .. released.seal .. " x" .. released.count) or "")
   if released and ns.onRelease then ns.onRelease(released) end
   if ns.onSwing then ns.onSwing(now, Game.tracker.swingSpeed) end
 end
 
--- A miss on our target shortly after our swing, with no ability of ours in
--- between, was the swing. In a group other players' misses look the same,
--- so there we count every swing as a hit and let the after-fight check fix it.
+-- Misses on the target are only recorded, not acted on. The first real fight
+-- showed they can't be tied to our swing reliably: undoing a stack for each
+-- one left the count at 0 while the real buff had 3. Counting every swing
+-- can at worst call the swap one swing early; undercounting never calls it.
 local function onUnitCombat(unit, action, _, amount)
   if plain(unit) ~= "target" or not MISSES[plain(action) or ""] then return end
-  if plain(try(IsInGroup)) then return end
   local now = GetTime()
-  local since = Game.swingAt and (now - Game.swingAt)
-  if not since or since > 1.0 then return end
-  if Game.lastAbility and now - Game.lastAbility < 0.7 and Game.lastAbility >= Game.swingAt - 0.2 then return end
-  if Game.tracker:swingMissed(now) then
-    Game.stats.misses = (Game.stats.misses or 0) + 1
-    Game.log("swing missed (%s), stacks back to %d", tostring(plain(action)), Game.tracker.stacks)
-  end
+  Game.stats.misses = (Game.stats.misses or 0) + 1
+  Game.log("target %s: %.2fs after swing, %.2fs after ability", tostring(plain(action)),
+    Game.swingAt and (now - Game.swingAt) or -1, Game.lastAbility and (now - Game.lastAbility) or -1)
 end
 
 local handlers = {}

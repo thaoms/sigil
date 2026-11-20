@@ -196,8 +196,13 @@ cast(20915); tick(0.2)
 fire("PLAYER_SWING", 3.3, 0); tick(0.5)
 expect("swing released righteousness and stored command", ns.Game.tracker.stored, "command")
 fire("UNIT_COMBAT", "target", "DODGE", "", 0, 1); tick(0.1)
-expect("a dodge undoes that swing", ns.Game.tracker.stored, "righteousness")
+expect("a dodge on the target is recorded but changes nothing", ns.Game.tracker.stored, "command")
 expect("miss counted", ns.Game.stats.misses, 1)
+world.known[99999] = true
+C_Spell.GetSpellName = (function(old) return function(id) if id == 99999 then return "Seal of Righteousness" end return old(id) end end)(C_Spell.GetSpellName)
+cast(99999); tick(0.1)
+expect("an unlisted seal rank is recognised by name", ns.Game.tracker.seal, "righteousness")
+cast(20915); tick(0.1)
 
 -- secret payloads must not break anything
 fire("UNIT_SPELLCAST_SUCCEEDED", "player", "guid", SECRET)
@@ -222,7 +227,6 @@ world.auras[1311703] = { applications = 2, expirationTime = clock + 9 }
 fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 expect("adopted real stacks", ns.Game.tracker.stacks, 2)
 expect("comparison counted", ns.Game.stats.compared, 1)
-expect("drift noticed", ns.Game.stats.drifted, 1)
 
 -- commands
 SlashCmdList.SIGIL("check")
