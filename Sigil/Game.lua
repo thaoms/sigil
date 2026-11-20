@@ -704,7 +704,7 @@ function Game.start()
     local saved = ns.db.cdm
     if type(saved) == "table" then
       for k, v in pairs(Game.cdm) do if saved[k] == nil then saved[k] = v end end
-      saved.at, saved.lastEcho, saved.echoDownRun, saved.sealDownRun, saved.lastTextLogged, saved.textOtherLogged = nil, nil, nil, nil, nil, nil
+      saved.at, saved.lastEcho, saved.echoDownRun, saved.sealDownRun, saved.lastTextLogged, saved.textOtherLogged, saved.buffReadableLogged = nil, nil, nil, nil, nil, nil, nil
       Game.cdm = saved
     else
       ns.db.cdm = Game.cdm
@@ -858,9 +858,45 @@ local function describeFrame(frame, depth, out, prefix)
   end)
 end
 
+-- The game's own buff icons (top of the screen). Each icon has a small count
+-- text for stacking buffs. This only checks whether those count texts can be
+-- read in combat at all; working out which icon is Unsealed Wrath comes later.
+local COUNT_KEYS = { Count = true, count = true, Applications = true }
+local function countStrings(frame, depth, found)
+  if not frame or depth > 4 or #found > 80 then return found end
+  pcall(function()
+    for key, value in pairs(frame) do
+      if type(key) == "string" and COUNT_KEYS[key] and type(value) == "table" and value.GetText then
+        found[#found + 1] = value
+      end
+    end
+  end)
+  pcall(function()
+    for _, child in ipairs({ frame:GetChildren() }) do countStrings(child, depth + 1, found) end
+  end)
+  return found
+end
+
+function Game.probeBuffIcons()
+  local root = _G.BuffFrame
+  if not root then return nil end
+  local hidden, readable, empty = 0, 0, 0
+  for _, fs in ipairs(countStrings(root, 0, {})) do
+    local ok, text = pcall(fs.GetText, fs)
+    if not ok or issecret(text) then hidden = hidden + 1
+    elseif text == nil or text == "" then empty = empty + 1
+    else readable = readable + 1 end
+  end
+  return hidden, readable, empty
+end
+
 function Game.describeStackButton()
   if Game.inCombat then return nil end
   local out = {}
+  if _G.BuffFrame then
+    out[#out + 1] = "== BuffFrame"
+    describeFrame(_G.BuffFrame, 0, out, "")
+  end
   for _, name in ipairs(CDM_VIEWERS) do
     local viewer = _G[name]
     if viewer and viewer.GetChildren then
@@ -916,6 +952,20 @@ local function watchCooldownManager(now)
   local t = Game.tracker
   -- give the game a moment to light the button after a change
   local settled = not Game.swingAt or now - Game.swingAt > 0.8
+  -- buff icon count texts: readable in combat, or hidden?
+  if Game.inCombat and settled and t.stacks > 0 then
+    local hidden, readable = Game.probeBuffIcons()
+    if hidden then
+      c.buffHidden = (c.buffHidden or 0) + hidden
+      c.buffReadable = (c.buffReadable or 0) + readable
+      if readable > 0 and not c.buffReadableLogged then
+        c.buffReadableLogged = true
+        Game.log("buff icon count text readable in combat (%d readable, %d hidden)", readable, hidden)
+      end
+    else
+      c.buffMissing = (c.buffMissing or 0) + 1
+    end
+  end
   -- the stack number test: is the printed count readable, and does it match?
   if state.echoText ~= nil and settled then
     c.textFrom = state.echoTextFrom
@@ -1100,6 +1150,7 @@ function Game.report()
   add("cooldown manager stacks: agree %d, shows down while counted %d, shows up while none counted %d", c.echoAgree, c.echoDown, c.echoUp)
   add("cooldown manager seal: agree %d, shows down while counted %d, shows up while none counted %d", c.sealAgree, c.sealDown, c.sealUp)
   add("cooldown manager corrections made: %d", c.fixes or 0)
+  add("buff icons, count texts in combat: readable %d, hidden %d, buff frame not found %d", c.buffReadable or 0, c.buffHidden or 0, c.buffMissing or 0)
   add("cooldown manager stack number (%s): readable %d (matched %d, differed %d), hidden %d, other %d",
     tostring(c.textFrom), c.textPlain or 0, c.textMatch or 0, c.textMiss or 0, c.textSecret or 0, c.textOther or 0)
   local both, single = Game.compareLines()

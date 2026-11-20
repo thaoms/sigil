@@ -316,6 +316,13 @@ stackFs.text = "3"; ns.Game.tracker.stacks = 1; tick(1.0)
 expect("readable stack number that differs is counted", (ns.Game.cdm.textMiss or 0) > 0, true)
 echoItem.Applications = nil
 world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
+BuffFrame = widget("Frame")
+local buffButton = widget("Frame"); buffButton.Count = widget("FontString"); buffButton.Count.text = SECRET
+function BuffFrame:GetChildren() return buffButton end
+local h, r = ns.Game.probeBuffIcons()
+expect("a hidden buff icon count is seen as hidden", h, 1)
+buffButton.Count.text = "2"; h, r = ns.Game.probeBuffIcons()
+expect("a readable buff icon count is seen as readable", r, 1)
 local dump = ns.Game.describeStackButton()
 expect("stack button can be described out of combat", dump and #dump > 0, true)
 world.combat = true; fire("PLAYER_REGEN_DISABLED"); tick(0.2)
