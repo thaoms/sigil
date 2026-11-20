@@ -536,7 +536,12 @@ local function onUnitCombat(unit, action, _, amount)
   -- Solo, every hit on the target is ours: add it up to compare seal patterns.
   if plain(action) == "WOUND" and Game.fight and not plain(try(IsInGroup)) then
     local hit = plain(amount)
-    if type(hit) == "number" then Game.fight.damage = Game.fight.damage + hit end
+    Game.fight.hits = (Game.fight.hits or 0) + 1
+    if type(hit) == "number" then Game.fight.damage = Game.fight.damage + hit
+    elseif not Game.fight.oddAmount then
+      Game.fight.oddAmount = true
+      Game.log("hit amount unreadable: %s", issecret(amount) and "SECRET" or type(amount))
+    end
     return
   end
   if not MISSES[plain(action) or ""] then return end
@@ -576,7 +581,10 @@ local function closeFight()
   Game.fight = nil
   if not fight then return end
   local seconds = GetTime() - fight.start
-  if seconds < 8 or fight.damage <= 0 or not ns.db then return end
+  if seconds < 8 or fight.damage <= 0 or not ns.db then
+    Game.log("fight not counted: %.1fs, %s damage, %s hits seen, group %s", seconds, tostring(fight.damage), tostring(fight.hits), tostring(plain(try(IsInGroup))))
+    return
+  end
   Game.log("fight: %.0fs, %d damage, %.0f per second, %d seals, pattern %s", seconds, fight.damage, fight.damage / seconds, fight.seals, fight.pattern)
   ns.db.tally = ns.db.tally or {}
   local t = ns.db.tally[fight.pattern] or { fights = 0, seconds = 0, damage = 0, seals = 0 }
