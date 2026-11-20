@@ -62,9 +62,10 @@ function Halo.create()
     ns.db.pos = { point, rel, x, y }
   end)
 
+  f.back = tex(f, "back", "BACKGROUND", -3)
   f.glow = tex(f, "glow", "BACKGROUND", -2)
   f.track = tex(f, "ring_track", "BACKGROUND", 1)
-  tint(f.track, Data.color.ink, 0.13)
+  tint(f.track, Data.color.ink, 0.3)
 
   -- swing timer: a ring that fills toward the notch
   local ok, swing = pcall(CreateFrame, "Cooldown", nil, f, "CooldownFrameTemplate")
@@ -101,8 +102,8 @@ function Halo.create()
   f.burst:SetAlpha(0)
 
   f.glyph = art:CreateTexture(nil, "OVERLAY", nil, 3)
-  f.glyph:SetPoint("CENTER")
-  f.glyph:SetSize(76 * U, 76 * U)
+  f.glyph:SetPoint("CENTER", 0, 10 * U)
+  f.glyph:SetSize(70 * U, 70 * U)
 
   local okAnim, group = pcall(f.pulse.CreateAnimationGroup, f.pulse)
   if okAnim and group then
@@ -116,27 +117,47 @@ function Halo.create()
     f.pulseAnim = group
   end
 
-  f.name = art:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  f.name:SetPoint("TOP", f, "BOTTOM", 0, -4)
-  f.why = art:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  local labels = CreateFrame("Frame", nil, f)
+  labels:SetAllPoints(f)
+  labels:SetFrameLevel(f:GetFrameLevel() + 4)
+  f.labels = labels
+  -- dark plate behind the text so it reads on any ground
+  f.plate = labels:CreateTexture(nil, "BACKGROUND")
+  f.plate:SetColorTexture(0.02, 0.03, 0.05, 0.62)
+  f.plate:SetPoint("TOP", f, "BOTTOM", 0, -2)
+  f.plate:SetSize(SIZE * 1.75, 44)
+
+  -- the key to press, large, inside the disc
+  f.key = labels:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+  f.key:SetPoint("CENTER", f, "CENTER", 0, -46 * U)
+  f.key:SetTextColor(1, 1, 1)
+
+  f.name = labels:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  f.name:SetPoint("TOP", f, "BOTTOM", 0, -8)
+  f.why = labels:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   f.why:SetPoint("TOP", f.name, "BOTTOM", 0, -3)
   f.why:SetWidth(SIZE * 1.6)
-  f.marks = art:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  f.marks = labels:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   f.marks:SetPoint("TOP", f.why, "BOTTOM", 0, -4)
   f.marks:SetWidth(SIZE * 1.8)
-  f.marks:SetTextColor(Data.color.warn[1], Data.color.warn[2], Data.color.warn[3])
+  f.marks:SetTextColor(1.00, 0.82, 0.30)
+  local font = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+  pcall(f.key.SetFont, f.key, font, 22, "THICKOUTLINE")
+  pcall(f.name.SetFont, f.name, font, 16, "OUTLINE")
+  pcall(f.why.SetFont, f.why, font, 12, "OUTLINE")
+  pcall(f.marks.SetFont, f.marks, font, 12, "OUTLINE")
 
   f.orbs = {}
   for i = 1, 3 do
     local size = (i == 1 and 54 or 46) * U
-    local o = makeOrb(art, size)
+    local o = makeOrb(labels, size)
     f.orbs[i] = o
   end
   f.orbs[1]:SetPoint("LEFT", f, "RIGHT", 6, 26 * U)
   f.orbs[2]:SetPoint("TOP", f.orbs[1], "BOTTOM", 0, -16)
   f.orbs[3]:SetPoint("TOP", f.orbs[2], "BOTTOM", 0, -16)
 
-  f.hint = art:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  f.hint = labels:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   f.hint:SetPoint("BOTTOM", f, "TOP", 0, 6)
   f.hint:SetText("Drag me. Lock with /sigil lock")
   f.hint:Hide()
@@ -197,32 +218,40 @@ function Halo.render(d, demo)
     f:SetAlpha(0)
     return
   end
-  f:SetAlpha(idle and 0.45 or 1)
+  f:SetAlpha(1)
+  local dim = idle and 0.6 or 1
+  f.art:SetAlpha(dim)
+  f.back:SetAlpha(dim)
+  if f.swing then f.swing:SetAlpha(dim) end
 
   local c = Data.color[main.id] or Data.color.gold
   f.glyph:SetTexture(Data.MEDIA .. (Data.glyph[main.id] or "glyph_attack"))
-  tint(f.glyph, c, idle and 0.5 or 1)
+  tint(f.glyph, c, idle and 0.7 or 1)
   tint(f.edge, c, 0.5)
   tint(f.glow, c, main.urgent and 1 or 0.55)
   setPulse(f, main.urgent and not idle, c)
 
   local stackColor = Data.color[d.stored or ""] or Data.color.gold
   for i = 1, 3 do
-    if i <= (d.stacks or 0) then tint(f.stacks[i], stackColor, 1) else tint(f.stacks[i], Data.color.ink, 0.13) end
+    if i <= (d.stacks or 0) then tint(f.stacks[i], stackColor, 1) else tint(f.stacks[i], Data.color.ink, 0.28) end
     local level = d.mana or 3
-    if i <= level then tint(f.mana[i], Data.manaColor[level], 1) else tint(f.mana[i], Data.color.ink, 0.13) end
+    if i <= level then tint(f.mana[i], Data.manaColor[level], 1) else tint(f.mana[i], Data.color.ink, 0.28) end
   end
 
+  local lines = 0
   if idle then
     f.name:SetText("")
     f.why:SetText("")
+    f.key:SetText("")
   else
     local key = demo and (demo.keys[main.id]) or Game.keyFor(main.id)
-    local label = (main.id == "attack") and "Attack" or Game.name(main.id)
-    if key then label = ("%s  |cffffffff[%s]|r"):format(label, key) end
-    f.name:SetText(label)
-    f.name:SetTextColor(c[1], c[2], c[3])
-    f.why:SetText(db.showWhy and main.why or "")
+    f.key:SetText(key or "")
+    f.name:SetText((main.id == "attack") and "Attack" or Game.name(main.id))
+    -- seal names in a light tint of the seal's colour: readable on any ground
+    f.name:SetTextColor(0.5 + c[1] * 0.5, 0.5 + c[2] * 0.5, 0.5 + c[3] * 0.5)
+    local why = db.showWhy and main.why or ""
+    f.why:SetText(why)
+    lines = 1 + (why ~= "" and 1 or 0)
   end
 
   local slot = 1
@@ -245,6 +274,21 @@ function Halo.render(d, demo)
   if d.marks.drink then marks[#marks + 1] = "Drink before the next pull" end
   if not Game.keyFor("attack") and not demo and not idle then marks[#marks + 1] = "Attack is not on your bar: /sigil setup" end
   f.marks:SetText(table.concat(marks, "  ·  "))
+  f.marks:ClearAllPoints()
+  if lines == 0 then
+    f.marks:SetPoint("TOP", f, "BOTTOM", 0, -8)
+  elseif lines == 1 then
+    f.marks:SetPoint("TOP", f.name, "BOTTOM", 0, -4)
+  else
+    f.marks:SetPoint("TOP", f.why, "BOTTOM", 0, -4)
+  end
+  if #marks > 0 then lines = lines + 1 end
+  if lines == 0 then
+    f.plate:Hide()
+  else
+    f.plate:SetHeight(10 + (idle and 0 or 22) + (lines - (idle and 0 or 1)) * 17)
+    f.plate:Show()
+  end
 
   if db.sound and main.urgent and main.id ~= f.lastUrgent and not demo then
     pcall(PlaySound, (SOUNDKIT and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) or 856, "Master")

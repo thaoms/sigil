@@ -56,6 +56,11 @@ def textures():
         '<stop offset="0" stop-color="#1d2b3d"/><stop offset="1" stop-color="#080c13"/></radialGradient></defs>'
         '<circle cx="110" cy="110" r="72" fill="url(#g)"/>'
         '<circle cx="110" cy="110" r="66" fill="none" stroke="#ece6d6" stroke-opacity="0.13" stroke-width="1"/>')
+    # soft dark backing so the thin rings stay readable on bright ground
+    t["back"] = svg(
+        '<defs><radialGradient id="g" cx="50%" cy="50%" r="50%">'
+        '<stop offset="0.80" stop-color="#05080d" stop-opacity="0.62"/><stop offset="1" stop-color="#05080d" stop-opacity="0"/>'
+        '</radialGradient></defs><circle cx="110" cy="110" r="110" fill="url(#g)"/>')
     t["disc_edge"] = svg('<circle cx="110" cy="110" r="72" fill="none" stroke="#fff" stroke-width="1.6"/>')
     t["ring_track"] = svg('<circle cx="110" cy="110" r="100" fill="none" stroke="#fff" stroke-width="2.5"/>')
     t["ring_fill"] = svg('<circle cx="110" cy="110" r="100" fill="none" stroke="#fff" stroke-width="3.2"/>')
@@ -133,7 +138,7 @@ def main():
             subprocess.run(["rsvg-convert", s, "-o", p], check=True)
             w, h, rows = read_png(p)
             assert w == h and w & (w - 1) == 0, (name, w, h)
-            write_tga(os.path.join(OUT, name + ".tga"), w, h, rows, white=name not in ("disc", "orb"))
+            write_tga(os.path.join(OUT, name + ".tga"), w, h, rows, white=name not in ("disc", "orb", "back"))
             print(f"{name}.tga {w}x{h}")
 
 

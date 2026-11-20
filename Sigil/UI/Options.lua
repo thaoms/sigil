@@ -20,6 +20,7 @@ local ROWS = {
   { "cycle", "recover", "When mana runs low", "How Sigil helps you recover." },
   { "check", "upkeep", "Aura and blessing reminders", "Shown only when one is missing." },
   { "check", "hojCue", "Hammer of Justice mark", "Shown just before Judgement is ready." },
+  { "check", "hojInMacro", "Stun from the Attack key", "Adds Hammer of Justice to the macro: used whenever ready." },
   { "check", "sound", "Swap sound", "A soft click when it's time to swap seals." },
   { "check", "hideErrors", "Hide red error text", "Hides ALL red error messages, e.g. \"not ready yet\"." },
 }
@@ -38,7 +39,7 @@ function Options.apply(key)
     if db.hideErrors then pcall(UIErrorsFrame.UnregisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE")
     else pcall(UIErrorsFrame.RegisterEvent, UIErrorsFrame, "UI_ERROR_MESSAGE") end
   end
-  if key == "attackKeys" then
+  if key == "attackKeys" or key == "hojInMacro" then
     if db.attackKeys ~= 2 then ns.Game.macroState = ns.Game.ensureMacro() end
     ns.Game.scanKeys()
   end

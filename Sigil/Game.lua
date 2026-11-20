@@ -235,7 +235,11 @@ end
 
 function Game.macroBody()
   local lines = { "#showtooltip", "/startattack" }
-  for _, key in ipairs({ "judgement", "how", "holy_strike", "exorcism" }) do
+  -- With the stun first, a press where both are ready stuns and then judges
+  -- the stunned target in the same instant (Judgement skips the global cooldown).
+  local order = { "judgement", "how", "holy_strike", "exorcism" }
+  if ns.db and ns.db.hojInMacro then table.insert(order, 1, "hoj") end
+  for _, key in ipairs(order) do
     if Game.known[key] then
       local name = plain(try(C_Spell.GetSpellName, Game.known[key]))
       if name then lines[#lines + 1] = "/cast " .. name end

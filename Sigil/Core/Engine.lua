@@ -123,7 +123,7 @@ function Engine.decide(view, settings)
       and (cons == "always" or (cons == "aoe" and (view.enemies or 0) >= 3)) then
       out.side[#out.side + 1] = "consecration"
     end
-    if settings.hojCue ~= false and known.hoj and ready.hoj and seal == "command"
+    if settings.hojCue ~= false and not settings.hojInMacro and known.hoj and ready.hoj and seal == "command"
       and (view.judgementRemains or 99) <= STUN_WINDOW and afford.hoj ~= false then
       out.side[#out.side + 1] = "hoj"
     end

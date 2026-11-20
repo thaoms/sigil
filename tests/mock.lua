@@ -148,12 +148,19 @@ local passed, failed = 0, 0
 local function expect(what, got, want)
   if got == want then passed = passed + 1 else failed = failed + 1; out("FAIL " .. what .. ": expected " .. tostring(want) .. ", got " .. tostring(got)) end
 end
-local function shown() return (ns.Halo.frame.name.text or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") end
+local function shown()
+  local f = ns.Halo.frame
+  local key = f.key.text
+  return (f.name.text or "") .. ((key and key ~= "") and ("  [" .. key .. "]") or "")
+end
 
 fire("ADDON_LOADED", "Sigil")
 fire("PLAYER_LOGIN")
 expect("started", ns.ready, true)
 expect("start error", SigilDB.startError, nil)
+ns.db.hojInMacro = true; ns.Options.apply("hojInMacro")
+expect("stun can be added to the macro", world.macros.SigilAttack, "#showtooltip\n/startattack\n/cast Hammer of Justice\n/cast Judgement\n/cast Holy Strike\n/cast Exorcism")
+ns.db.hojInMacro = false; ns.Options.apply("hojInMacro")
 expect("macro created", world.macros.SigilAttack, "#showtooltip\n/startattack\n/cast Judgement\n/cast Holy Strike\n/cast Exorcism")
 expect("holy strike resolves to highest known rank", ns.Game.known.holy_strike, 1866)
 expect("unsealed wrath assumed", ns.Game.unsealedWrathHow, "assumed")
