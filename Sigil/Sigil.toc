@@ -2,7 +2,7 @@
 ## Title: Sigil
 ## Notes: Shows a Retribution Paladin which seal to press and when. It never presses anything for you.
 ## Author: Thomas
-## Version: 0.1.0
+## Version: 0.2.0
 ## Category: Combat
 ## IconTexture: Interface\AddOns\Sigil\Media\glyph_command
 ## AddonCompartmentFunc: Sigil_OnAddonCompartmentClick

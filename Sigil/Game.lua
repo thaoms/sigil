@@ -15,7 +15,6 @@ local function plain(v)
   if issecret(v) then return nil end
   return v
 end
-Game.plain = plain
 
 -- Reads one field of a table the game returned; nil if it can't be read.
 local function field(t, k)
@@ -24,7 +23,6 @@ local function field(t, k)
   if ok then return plain(v) end
   return nil
 end
-Game.field = field
 
 local function try(fn, ...)
   if type(fn) ~= "function" then return nil end
@@ -32,7 +30,6 @@ local function try(fn, ...)
   if ok then return a, b, c, d end
   return nil
 end
-Game.try = try
 
 local C_Spell, C_SpellBook, C_UnitAuras = C_Spell or {}, C_SpellBook or {}, C_UnitAuras or {}
 
@@ -508,7 +505,6 @@ local function onCast(spellID)
     t:castSeal(key, now)
     if Game.fight then Game.fight.seals = Game.fight.seals + 1 end
     Game.log("seal %s (id %s)", key, tostring(id))
-    if ns.onSeal then ns.onSeal(key) end
   elseif Data.cooldowns[key] then
     t:castSpell(key, now, Data.OFF_GCD[key])
     Game.castAt = Game.castAt or {}
@@ -542,7 +538,7 @@ end
 -- after the swing. A missed swing stores no stack (the real buff confirmed
 -- it), so a miss that isn't an ability's undoes the last swing's stack.
 -- In a group other players' misses look the same, so there every swing counts.
-local function onUnitCombat(unit, action, _, amount)
+local function onUnitCombat(unit, action)
   if plain(unit) ~= "target" then return end
   if not MISSES[plain(action) or ""] then return end
   local now = GetTime()
@@ -709,10 +705,6 @@ function Game.start()
   Game.scanSpells()
   Game.scanKeys()
   Game.syncBuffs()
-  Game.unsealedWrathNote()
-end
-
-function Game.unsealedWrathNote()
   Game.tracker.unsealedWrath = Game.unsealedWrath ~= false
 end
 
