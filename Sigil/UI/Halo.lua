@@ -199,6 +199,17 @@ function Halo.create()
   f.orbs[2]:SetPoint("TOP", f.orbs[1], "BOTTOM", 0, -16)
   f.orbs[3]:SetPoint("TOP", f.orbs[2], "BOTTOM", 0, -16)
 
+  -- the game's own stack count, copied from the Cooldown Manager button.
+  -- Sigil can't read it; it only passes the hidden value to this text.
+  f.real = labels:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  f.real:SetPoint("CENTER", f, "CENTER", 62 * U, 62 * U)
+  pcall(f.real.SetFont, f.real, STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+  f.real:SetTextColor(1, 1, 1)
+  f.realCaption = labels:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  f.realCaption:SetPoint("TOP", f.real, "BOTTOM", 0, -1)
+  pcall(f.realCaption.SetFont, f.realCaption, STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 9, "OUTLINE")
+  f.realCaption:SetText("game")
+
   f.hint = labels:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   f.hint:SetPoint("BOTTOM", f, "TOP", 0, 6)
   f.hint:SetText("Drag me. Lock with /sigil lock")
@@ -271,6 +282,28 @@ function Halo.playCue(kind)
   if not ok or played == false then ns.Game.log("sound %s (%s) did not play", tostring(kind), tostring(id)) end
 end
 
+-- Copies the game's hidden stack count into the halo without reading it.
+-- If the game ever refuses, the display switches itself off.
+function Halo.updateRealStacks()
+  local f, Game = Halo.frame, ns.Game
+  if not f or not f.real then return end
+  local source = Game.stackText
+  if not ns.db.realStacks or f.realBroken or not source or not Game.stackUp then
+    f.real:SetText("")
+    f.realCaption:Hide()
+    return
+  end
+  local ok = pcall(function() f.real:SetText(source:GetText()) end)
+  if not ok then
+    f.realBroken = true
+    f.real:SetText("")
+    f.realCaption:Hide()
+    Game.log("error: the game refused to show its stack count; display switched off")
+    return
+  end
+  f.realCaption:Show()
+end
+
 -- Draws one decision from the engine.
 function Halo.render(d, demo)
   local f, db, Game = Halo.frame, ns.db, ns.Game
@@ -303,6 +336,7 @@ function Halo.render(d, demo)
     if i <= (d.stacks or 0) then tint(f.stacks[i], stackColor, 1) else tint(f.stacks[i], Data.color.ink, 0.28) end
   end
   Halo.updateMana(d.mana)
+  if demo then f.real:SetText(""); f.realCaption:Hide() else Halo.updateRealStacks() end
 
   local lines = 0
   if idle then

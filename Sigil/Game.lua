@@ -508,6 +508,24 @@ end
 
 local MISSES = { MISS = true, DODGE = true, PARRY = true }
 
+-- A Seal of Command extra hit while another seal is up can only come from
+-- stored Command copies released by the swing that just landed. If Sigil
+-- didn't think that swing released Command copies, its count was off:
+-- right after a release, one copy of the current seal is stored.
+function Game.commandProc(now)
+  local t = Game.tracker
+  if not t.seal or t.seal == "command" then return end
+  if not Game.swingAt or now - Game.swingAt > 1.5 then return end
+  if Game.procCheckedFor == Game.swingAt then return end
+  Game.procCheckedFor = Game.swingAt
+  local released = t.lastRelease
+  if released and released.seal == "command" and released.at == Game.swingAt then return end
+  local before = ("%s x%d"):format(tostring(t.stored), t.stacks)
+  t.stored, t.stacks, t.stacksExpire, t.undo = t.seal, 1, Game.swingAt + Tracker.STACK_DURATION, nil
+  Game.cdm.fixes = (Game.cdm.fixes or 0) + 1
+  Game.log("command proc drift: Command copies were released; counted %s, now %s x1", before, t.seal)
+end
+
 local function onCast(spellID)
   local id = plain(spellID)
   if not id then return end
@@ -518,8 +536,9 @@ local function onCast(spellID)
     -- Not a seal rank we know. A seal's extra hit reports itself under the
     -- seal's name (Seal of Command's is 20424), so the name alone must never
     -- count as casting the seal. Record it and move on.
+    if Data.SEAL_PROCS[id] then Game.commandProc(now) return end
     local name = plain(try(C_Spell.GetSpellName, id))
-    if name and name:find("^Seal of") and not Data.SEAL_PROCS[id] then
+    if name and name:find("^Seal of") then
       Game.log("unlisted seal id %s name %s (ignored)", tostring(id), name)
     end
     return
@@ -704,7 +723,7 @@ function Game.start()
     local saved = ns.db.cdm
     if type(saved) == "table" then
       for k, v in pairs(Game.cdm) do if saved[k] == nil then saved[k] = v end end
-      saved.at, saved.lastEcho, saved.echoDownRun, saved.sealDownRun, saved.lastTextLogged, saved.textOtherLogged, saved.buffReadableLogged = nil, nil, nil, nil, nil, nil, nil
+      saved.at, saved.lastEcho, saved.echoDownRun, saved.sealDownRun, saved.echoUpRun = nil, nil, nil, nil, nil
       Game.cdm = saved
     else
       ns.db.cdm = Game.cdm
@@ -780,140 +799,10 @@ local CDM_IDS = { [200341] = "echo", [200342] = "echo", [200339] = "seal", [2003
 Game.cdm = { polls = 0, found = {}, echoAgree = 0, echoDown = 0, echoUp = 0, sealAgree = 0, sealDown = 0, sealUp = 0 }
 
 -- Returns { echo = true/false/nil, seal = true/false/nil }; nil means not shown.
--- The stack number printed on a Cooldown Manager button. Untested whether
--- the game lets addons read it in combat, so this only reads and reports:
--- returns the text, or SECRET_TEXT when hidden, or nil when not found.
--- Only Blizzard's frames are read; nothing is written to them.
-local SECRET_TEXT = {}
-Game.SECRET_TEXT = SECRET_TEXT
-local function readText(fs)
-  if not fs or not fs.GetText then return nil end
-  local ok, text = pcall(fs.GetText, fs)
-  if not ok then return SECRET_TEXT end
-  if issecret(text) then return SECRET_TEXT end
-  return text
-end
-local function stackText(item)
-  for _, path in ipairs({ { "Applications", "Applications" }, { "Applications", "Text" }, { "Count" }, { "ChargeCount", "Current" } }) do
-    local node = item
-    for _, key in ipairs(path) do
-      node = node and rawget(node, key)
-    end
-    if node and node.GetText then
-      local text = readText(node)
-      if text ~= nil then return text, table.concat(path, ".") end
-    end
-  end
-  -- fall back to any font string directly on the button or its Applications frame
-  for _, holder in ipairs({ item, rawget(item, "Applications") }) do
-    if holder and holder.GetRegions then
-      local ok, regions = pcall(function() return { holder:GetRegions() } end)
-      if ok then
-        for _, region in ipairs(regions) do
-          if region.GetObjectType and region:GetObjectType() == "FontString" then
-            local text = readText(region)
-            if text ~= nil then return text, "region" end
-          end
-        end
-      end
-    end
-  end
-  return nil
-end
-
--- Describes how the Cooldown Manager's stack button is built, so the stack
--- number can be found. Out of combat only, read only.
-local function describeFrame(frame, depth, out, prefix)
-  if depth > 3 or #out > 120 then return end
-  local okType, kind = pcall(frame.GetObjectType, frame)
-  local okName, name = pcall(frame.GetName, frame)
-  out[#out + 1] = ("%s[%s] %s"):format(prefix, okType and tostring(kind) or "?", okName and tostring(name) or "")
-  -- named fields on the frame's table
-  pcall(function()
-    for key, value in pairs(frame) do
-      if type(key) == "string" and type(value) == "table" and value.GetObjectType then
-        local okT, t = pcall(value.GetObjectType, value)
-        local text = ""
-        if okT and t == "FontString" then
-          local okX, x = pcall(value.GetText, value)
-          text = okX and (issecret(x) and " text=SECRET" or (" text='" .. tostring(x) .. "'")) or " text=ERR"
-        end
-        out[#out + 1] = ("%s  .%s -> %s%s"):format(prefix, key, okT and tostring(t) or "?", text)
-      end
-    end
-  end)
-  pcall(function()
-    for i, region in ipairs({ frame:GetRegions() }) do
-      local okT, t = pcall(region.GetObjectType, region)
-      if okT and t == "FontString" then
-        local okX, x = pcall(region.GetText, region)
-        out[#out + 1] = ("%s  region %d FontString text=%s"):format(prefix, i, okX and (issecret(x) and "SECRET" or ("'" .. tostring(x) .. "'")) or "ERR")
-      end
-    end
-  end)
-  pcall(function()
-    for i, child in ipairs({ frame:GetChildren() }) do
-      describeFrame(child, depth + 1, out, prefix .. "  child" .. i .. " ")
-    end
-  end)
-end
-
--- The game's own buff icons (top of the screen). Each icon has a small count
--- text for stacking buffs. This only checks whether those count texts can be
--- read in combat at all; working out which icon is Unsealed Wrath comes later.
-local COUNT_KEYS = { Count = true, count = true, Applications = true }
-local function countStrings(frame, depth, found)
-  if not frame or depth > 4 or #found > 80 then return found end
-  pcall(function()
-    for key, value in pairs(frame) do
-      if type(key) == "string" and COUNT_KEYS[key] and type(value) == "table" and value.GetText then
-        found[#found + 1] = value
-      end
-    end
-  end)
-  pcall(function()
-    for _, child in ipairs({ frame:GetChildren() }) do countStrings(child, depth + 1, found) end
-  end)
-  return found
-end
-
-function Game.probeBuffIcons()
-  local root = _G.BuffFrame
-  if not root then return nil end
-  local hidden, readable, empty = 0, 0, 0
-  for _, fs in ipairs(countStrings(root, 0, {})) do
-    local ok, text = pcall(fs.GetText, fs)
-    if not ok or issecret(text) then hidden = hidden + 1
-    elseif text == nil or text == "" then empty = empty + 1
-    else readable = readable + 1 end
-  end
-  return hidden, readable, empty
-end
-
-function Game.describeStackButton()
-  if Game.inCombat then return nil end
-  local out = {}
-  if _G.BuffFrame then
-    out[#out + 1] = "== BuffFrame"
-    describeFrame(_G.BuffFrame, 0, out, "")
-  end
-  for _, name in ipairs(CDM_VIEWERS) do
-    local viewer = _G[name]
-    if viewer and viewer.GetChildren then
-      pcall(function()
-        for _, item in ipairs({ viewer:GetChildren() }) do
-          local id = plain(rawget(item, "cooldownID"))
-          if id and CDM_IDS[id] then
-            local instance = rawget(item, "auraInstanceID")
-            out[#out + 1] = ("== %s cooldownID %d (%s) up=%s"):format(name, id, CDM_IDS[id], tostring(issecret(instance) or instance ~= nil))
-            describeFrame(item, 0, out, "")
-          end
-        end
-      end)
-    end
-  end
-  return out
-end
+-- The stack number printed on the Cooldown Manager's Unsealed Wrath button
+-- (its Applications.Applications text). Live tests showed the game hides it
+-- from addons in combat, so Sigil never reads it. The halo only hands the
+-- hidden value to its own text, which the game allows, so you see the real count.
 
 function Game.readCooldownManager()
   local state = {}
@@ -930,9 +819,11 @@ function Game.readCooldownManager()
             local up = issecret(instance) or instance ~= nil
             Game.cdm.found[id] = name
             if up then state[what] = true elseif state[what] == nil then state[what] = false end
-            if what == "echo" and up then
-              local text, where = stackText(item)
-              if text ~= nil then state.echoText, state.echoTextFrom = text, where end
+            if what == "echo" then
+              local apps = rawget(item, "Applications")
+              local fs = apps and rawget(apps, "Applications")
+              if fs and fs.GetText then state.echoText = fs end
+              state.echoUp = up
             end
           end
         end
@@ -947,51 +838,12 @@ local function watchCooldownManager(now)
   if c.at and now - c.at < 0.25 then return end
   c.at = now
   local state = Game.readCooldownManager()
+  Game.stackText, Game.stackUp = state.echoText, state.echoUp
   c.polls = c.polls + 1
   if not Game.inCombat then return end
   local t = Game.tracker
   -- give the game a moment to light the button after a change
   local settled = not Game.swingAt or now - Game.swingAt > 0.8
-  -- buff icon count texts: readable in combat, or hidden?
-  if Game.inCombat and settled and t.stacks > 0 then
-    local hidden, readable = Game.probeBuffIcons()
-    if hidden then
-      c.buffHidden = (c.buffHidden or 0) + hidden
-      c.buffReadable = (c.buffReadable or 0) + readable
-      if readable > 0 and not c.buffReadableLogged then
-        c.buffReadableLogged = true
-        Game.log("buff icon count text readable in combat (%d readable, %d hidden)", readable, hidden)
-      end
-    else
-      c.buffMissing = (c.buffMissing or 0) + 1
-    end
-  end
-  -- the stack number test: is the printed count readable, and does it match?
-  if state.echoText ~= nil and settled then
-    c.textFrom = state.echoTextFrom
-    if state.echoText == SECRET_TEXT then
-      c.textSecret = (c.textSecret or 0) + 1
-    else
-      local n = tonumber(state.echoText) or (state.echoText == "" and 1) or nil
-      if n then
-        c.textPlain = (c.textPlain or 0) + 1
-        if n == t.stacks then c.textMatch = (c.textMatch or 0) + 1
-        else
-          c.textMiss = (c.textMiss or 0) + 1
-          if c.lastTextLogged ~= n .. ":" .. t.stacks then
-            c.lastTextLogged = n .. ":" .. t.stacks
-            Game.log("cooldown manager stack number %d, counted x%d", n, t.stacks)
-          end
-        end
-      else
-        c.textOther = (c.textOther or 0) + 1
-        if not c.textOtherLogged then
-          c.textOtherLogged = true
-          Game.log("cooldown manager stack text unexpected: '%s'", tostring(state.echoText))
-        end
-      end
-    end
-  end
   if state.echo ~= nil and settled then
     local mine = t.stacks > 0
     if mine == state.echo then c.echoAgree = c.echoAgree + 1
@@ -1001,6 +853,18 @@ local function watchCooldownManager(now)
       Game.log("cooldown manager: stacks shown %s, counted x%d", state.echo and "up" or "down", t.stacks)
     end
     c.lastEcho = state.echo
+    -- stacks exist but Sigil counts none: at least one copy is stored
+    if state.echo and not mine and t.seal and t.seal ~= "crusader" then
+      c.echoUpRun = (c.echoUpRun or 0) + 1
+      if c.echoUpRun >= 2 then
+        t.stored, t.stacks, t.stacksExpire = t.seal, 1, now + Tracker.STACK_DURATION
+        c.fixes = (c.fixes or 0) + 1
+        c.echoUpRun = 0
+        Game.log("cooldown manager drift: stacks exist, counted none; now %s x1", tostring(t.seal))
+      end
+    else
+      c.echoUpRun = 0
+    end
     if mine and not state.echo then
       c.echoDownRun = (c.echoDownRun or 0) + 1
       if c.echoDownRun >= 2 then
@@ -1150,9 +1014,6 @@ function Game.report()
   add("cooldown manager stacks: agree %d, shows down while counted %d, shows up while none counted %d", c.echoAgree, c.echoDown, c.echoUp)
   add("cooldown manager seal: agree %d, shows down while counted %d, shows up while none counted %d", c.sealAgree, c.sealDown, c.sealUp)
   add("cooldown manager corrections made: %d", c.fixes or 0)
-  add("buff icons, count texts in combat: readable %d, hidden %d, buff frame not found %d", c.buffReadable or 0, c.buffHidden or 0, c.buffMissing or 0)
-  add("cooldown manager stack number (%s): readable %d (matched %d, differed %d), hidden %d, other %d",
-    tostring(c.textFrom), c.textPlain or 0, c.textMatch or 0, c.textMiss or 0, c.textSecret or 0, c.textOther or 0)
   local both, single = Game.compareLines()
   for _, line in ipairs(both) do add("kill time %s", line) end
   for _, line in ipairs(single) do add("kill time %s", line) end

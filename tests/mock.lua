@@ -306,32 +306,26 @@ echoItem.auraInstanceID = SECRET; tick(0.6)
 expect("a secret instance id reads as up", ns.Game.readCooldownManager().echo, true)
 local stackFs = widget("FontString"); stackFs.text = SECRET
 echoItem.Applications = setmetatable({ Applications = stackFs }, { __index = function() return nil end })
-expect("a hidden stack number reads as secret", ns.Game.readCooldownManager().echoText, ns.Game.SECRET_TEXT)
-tick(1.0)
-expect("hidden stack number is counted", (ns.Game.cdm.textSecret or 0) > 0, true)
-stackFs.text = tostring(ns.Game.tracker.stacks)
-tick(1.0)
-expect("readable stack number that matches is counted", (ns.Game.cdm.textMatch or 0) > 0, true)
-stackFs.text = "3"; ns.Game.tracker.stacks = 1; tick(1.0)
-expect("readable stack number that differs is counted", (ns.Game.cdm.textMiss or 0) > 0, true)
+tick(0.6)
+expect("the hidden stack count is handed to the halo unread", ns.Halo.frame.real.text, SECRET)
+stackFs.text = "3"; tick(0.6)
+expect("the halo shows whatever the game shows", ns.Halo.frame.real.text, "3")
+-- the Cooldown Manager says stacks exist while Sigil counts none
+ns.Game.tracker.stacks, ns.Game.tracker.stored = 0, nil
+fire("PLAYER_SWING", 3.3, 0); ns.Game.tracker.stacks, ns.Game.tracker.stored = 0, nil
+tick(1.5)
+expect("stacks shown, none counted: set to one", ns.Game.tracker.stacks, 1)
+-- a Seal of Command extra hit while Righteousness is up and Sigil saw no release
+cast(21084); tick(0.2)
+ns.Game.tracker.stored, ns.Game.tracker.stacks = "righteousness", 2
+fire("PLAYER_SWING", 3.3, 0); ns.Game.tracker.stored, ns.Game.tracker.stacks, ns.Game.tracker.lastRelease = "righteousness", 3, nil
+fire("UNIT_SPELLCAST_SUCCEEDED", "player", "guid", 20424); tick(0.1)
+expect("command proc evidence resets the count", ns.Game.tracker.stacks, 1)
+local fixes = ns.Game.cdm.fixes
+fire("UNIT_SPELLCAST_SUCCEEDED", "player", "guid", 20424); tick(0.1)
+expect("only one correction per swing", ns.Game.cdm.fixes, fixes)
 echoItem.Applications = nil
-world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
-BuffFrame = widget("Frame")
-local buffButton = widget("Frame"); buffButton.Count = widget("FontString"); buffButton.Count.text = SECRET
-function BuffFrame:GetChildren() return buffButton end
-local h, r = ns.Game.probeBuffIcons()
-expect("a hidden buff icon count is seen as hidden", h, 1)
-buffButton.Count.text = "2"; h, r = ns.Game.probeBuffIcons()
-expect("a readable buff icon count is seen as readable", r, 1)
-local dump = ns.Game.describeStackButton()
-expect("stack button can be described out of combat", dump and #dump > 0, true)
-world.combat = true; fire("PLAYER_REGEN_DISABLED"); tick(0.2)
-cast(20915); fire("PLAYER_SWING", 3.3, 0); tick(1.2)
-expect("stacks kept while the button shows them", ns.Game.tracker.stacks > 0, true)
-local fixesBefore = ns.Game.cdm.fixes or 0
-echoItem.auraInstanceID = nil; tick(1.0)
-expect("stacks dropped once the button says they are gone", ns.Game.tracker.stacks, 0)
-expect("the correction is counted", ns.Game.cdm.fixes, fixesBefore + 1)
+cast(20915); tick(0.2)
 world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 
 -- commands
