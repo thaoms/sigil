@@ -666,6 +666,17 @@ function handlers.UNIT_AURA(unit)
 end
 
 function Game.start()
+  -- Cooldown Manager scores are kept with the settings so a reload can't lose them
+  if ns.db then
+    local saved = ns.db.cdm
+    if type(saved) == "table" then
+      for k, v in pairs(Game.cdm) do if saved[k] == nil then saved[k] = v end end
+      saved.at, saved.lastEcho = nil, nil
+      Game.cdm = saved
+    else
+      ns.db.cdm = Game.cdm
+    end
+  end
   Game.tracker = Tracker.new()
   for key, seconds in pairs(Data.cooldowns) do Game.tracker:setCooldown(key, seconds) end
   Game.inCombat = plain(try(UnitAffectingCombat, "player")) == true
