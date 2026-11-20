@@ -20,7 +20,7 @@ Version 0.2.0-beta3, for WoW Forever 1.60.1 (`## Interface: 16001`).
 - **Crusader opener** (optional). Judge Seal of the Crusader first, on every target or only on elites and bosses.
 - **Mana.** A true mana bar, plus a three-level estimate that drops Consecration and the swap when low and calls Seal of Wisdom when nearly empty.
 - **Reminders.** No aura, wrong aura, no blessing, drink before the next pull.
-- **Side marks.** Consecration on packs, Hammer of Justice just before Judgement.
+- **Side marks.** Consecration on packs, Hammer of Justice just before Judgement, Hammer of Wrath when the target is low enough.
 - **Manual stun.** Hammer of Justice stays on its own key; a mark shows when to press it, just before Judgement.
 
 ## Install
@@ -54,7 +54,7 @@ A setup window opens on first login. It creates the Attack macro, lists Sigil's 
 
 ![The options window](docs/screenshots/options.png)
 
-Suggested bar, as in the screenshot: 1 the Attack macro, 2 Seal of the Crusader (only if you use the opener), 3 Seal of Command, 4 Seal of Righteousness, 5 Consecration, 6 Hammer of Justice, 8 Seal of Wisdom. Sigil shows whichever keys you actually use.
+Suggested bar, as in the screenshot: 1 the Attack macro, 2 Seal of the Crusader (only if you use the opener), 3 Seal of Command, 4 Seal of Righteousness, 5 Consecration, 6 Hammer of Justice, 7 Hammer of Wrath (once learned), 8 Seal of Wisdom. The Attack macro holds only Judgement, Holy Strike and Exorcism: a macro press stops at the first spell it can't cast, so spells that are often unavailable get their own key and a mark. Sigil shows whichever keys you actually use.
 
 ![An action bar laid out for Sigil](docs/screenshots/action-bar.png)
 

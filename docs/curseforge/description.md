@@ -6,7 +6,8 @@ This is a beta. I built it for my own paladin and it works well for me solo, but
 
 - One halo under your character with the seal to press, the key it is on, your Unsealed Wrath stacks, your swing timer and a mana bar
 - It stays quiet most of the time. It only pulses and plays a sound when you need to swap seals
-- An Attack macro that Sigil makes for you. Judgement, Holy Strike, Exorcism and Hammer of Wrath on one key, so you spam that and only think about seals
+- An Attack macro that Sigil makes for you. Judgement, Holy Strike and Exorcism on one key, so you spam that and only think about seals
+- A mark that tells you when to press Hammer of Wrath, once the target is low enough
 - Seal weaving for Unsealed Wrath. Command and Righteousness by default, but you can pick the pair. 3 and 3 or 3 and 1
 - Optional Seal of the Crusader opener, for every target or only elites and bosses
 - A mark that tells you when to press Hammer of Justice, just before Judgement

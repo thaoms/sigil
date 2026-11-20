@@ -176,6 +176,16 @@ function Game.afford(key)
   return not short
 end
 
+-- true when the game says the spell can be cast now (ignoring mana), nil when hidden
+function Game.usable(key)
+  local id = Game.known[key]
+  if not id then return nil end
+  local usable, short = try(C_Spell.IsSpellUsable, id)
+  usable, short = plain(usable), plain(short)
+  if usable == nil then return nil end
+  return usable == true or short == true
+end
+
 -- true when off cooldown (the global cooldown doesn't count), nil when unknown
 function Game.ready(key)
   local id = Game.known[key]
@@ -247,10 +257,12 @@ function Game.macroBody()
   local face = Game.known.holy_strike or Game.known.judgement
   local faceName = face and plain(try(C_Spell.GetSpellName, face))
   local lines = { faceName and ("#showtooltip " .. faceName) or "#showtooltip", "/startattack" }
-  -- Hammer of Justice stays off this key: live, a /cast of it while it was on
-  -- cooldown kept the lines below it from firing (Holy Strike first, then
-  -- itself when moved below Exorcism). It is a manual key with a mark.
-  local order = { "judgement", "how", "holy_strike", "exorcism" }
+  -- A macro press stops at the first spell that uses the global cooldown and
+  -- can't be cast. Live, Hammer of Justice on cooldown kept Holy Strike from
+  -- firing. So only spells that are reliably castable go here: Judgement
+  -- (off the global cooldown), Holy Strike, and Exorcism last. Hammer of
+  -- Justice and Hammer of Wrath (low targets only) are manual keys with marks.
+  local order = { "judgement", "holy_strike", "exorcism" }
   for _, key in ipairs(order) do
     if Game.known[key] then
       local name = plain(try(C_Spell.GetSpellName, Game.known[key]))
@@ -902,7 +914,7 @@ local function watchCooldownManager(now)
   end
 end
 
-local FLAG_KEYS = { "command", "righteousness", "wisdom", "light", "justice", "crusader", "consecration", "hoj" }
+local FLAG_KEYS = { "command", "righteousness", "wisdom", "light", "justice", "crusader", "consecration", "hoj", "how" }
 function Game.knownFlags()
   local flags = {}
   for _, key in ipairs(FLAG_KEYS) do flags[key] = Game.known[key] ~= nil end
@@ -931,7 +943,12 @@ function Game.view()
   v.crusaderDone = Game.crusaderDone(now)
   local class = plain(try(UnitClassification, "target"))
   v.elite = class == "elite" or class == "rareelite" or class == "worldboss"
-  v.ready = { consecration = Game.ready("consecration") == true, hoj = Game.ready("hoj") == true }
+  v.ready = { consecration = Game.ready("consecration") == true, hoj = Game.ready("hoj") == true, how = Game.ready("how") }
+  v.usable = { how = Game.usable("how") }
+  if v.known.how and v.combat and v.usable.how ~= Game.lastHowUsable then
+    Game.lastHowUsable = v.usable.how
+    Game.log("hammer of wrath usable %s", tostring(v.usable.how))
+  end
   local judgementReady = Game.ready("judgement")
   v.judgementRemains = judgementReady and 0 or t:remains("judgement", now)
   if judgementReady == false and v.judgementRemains == 0 then v.judgementRemains = 99 end

@@ -22,6 +22,7 @@ end
 --   known[key]            spells the character has
 --   afford[key]           false when the game says "not enough mana"
 --   ready[key]            cooldown is up
+--   usable[key]           true when the game says it can be cast now (Hammer of Wrath: target low)
 --   judgementRemains      seconds until Judgement is ready
 --   enemies               enemies in melee, nil when unknown
 --   auraMissing, blessingMissing
@@ -169,6 +170,12 @@ function Engine.decide(view, settings)
   end
 
   if view.combat then
+    -- Hammer of Wrath only works on a low target, so it can't be in the
+    -- Attack macro: a failed cast there would stop Holy Strike.
+    if settings.howCue ~= false and known.how and view.usable and view.usable.how == true
+      and (view.ready and view.ready.how) ~= false and afford.how ~= false then
+      out.side[#out.side + 1] = "how"
+    end
     local cons = settings.consecration or "aoe"
     local bigPull = (view.enemies or 0) >= 3
     -- On a big pull Consecration stays until mana is nearly empty; otherwise

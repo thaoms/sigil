@@ -231,6 +231,22 @@ test("consecration and hammer of justice cues", function()
   eq(Engine.decide(view(t, { now = 1, ready = r, judgementRemains = 2 }), { stun = "always" }).side[1], "hoj", "an old stun setting is ignored")
 end)
 
+test("hammer of wrath mark only when the game says it can be cast", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0)
+  local known = { command = true, righteousness = true, how = true }
+  local function side(extra, s)
+    extra.now, extra.known, extra.judgementRemains = 1, known, 6
+    return Engine.decide(view(t, extra), s or {}).side
+  end
+  eq(side({ usable = { how = true }, ready = { how = true } })[1], "how", "low target: marked")
+  eq(#side({ usable = { how = false }, ready = { how = true } }), 0, "healthy target: no mark")
+  eq(#side({ usable = { how = nil }, ready = { how = true } }), 0, "hidden: no mark")
+  eq(#side({ usable = { how = true }, ready = { how = false } }), 0, "on cooldown: no mark")
+  eq(#side({ usable = { how = true }, ready = { how = true } }, { howCue = false }), 0, "turned off")
+  eq(#side({ usable = { how = true }, ready = { how = true }, afford = { how = false } }), 0, "no mana")
+end)
+
 test("out of combat with no target: idle, drink mark when low", function()
   local t = Tracker.new()
   local d = Engine.decide({ known = ALL, manaLevel = 2, auraMissing = true }, {})

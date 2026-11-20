@@ -108,12 +108,16 @@ C_SpellBook = {
 C_Spell = {
   GetSpellTexture = function(id) return 130000 + id end,
   GetSpellName = function(id)
-    local names = { [20271] = "Judgement", [1866] = "Holy Strike", [879] = "Exorcism", [26573] = "Consecration", [853] = "Hammer of Justice",
+    local names = { [20271] = "Judgement", [1866] = "Holy Strike", [879] = "Exorcism", [26573] = "Consecration", [853] = "Hammer of Justice", [24275] = "Hammer of Wrath",
       [20915] = "Seal of Command", [21084] = "Seal of Righteousness", [20166] = "Seal of Wisdom", [7294] = "Retribution Aura", [19740] = "Blessing of Might" }
     return names[id] or ("Spell " .. id)
   end,
   IsSpellInRange = function(id, unit) if unit and unit:find("nameplate") then return (world.near or {})[unit] end return true end,
-  IsSpellUsable = function(id) local c = world.cost[id] or 0 return world.mana >= c, world.mana < c end,
+  IsSpellUsable = function(id)
+    local c = world.cost[id] or 0
+    if world.unusable and world.unusable[id] then return false, false end
+    return world.mana >= c, world.mana < c
+  end,
   GetSpellCooldown = function(id)
     local active = (world.cooling[id] or 0) > clock
     return { isActive = active, isEnabled = true, duration = world.combat and SECRET or 0, startTime = world.combat and SECRET or 0 }
@@ -445,6 +449,17 @@ for _, row in ipairs({ "locked", "hideErrors", "attackKeys", "consecration", "re
   if c.scripts.OnClick then c.scripts.OnClick(c) end
 end
 tick(0.3)
+
+-- Hammer of Wrath: never in the macro, marked only when the game allows it
+ns.db.attackKeys = 1
+world.known[24275] = true; world.cost[24275] = 50; world.unusable = { [24275] = true }
+ns.Game.scanSpells(); ns.Options.apply("attackKeys")
+expect("hammer of wrath is known", ns.Game.known.how, 24275)
+expect("hammer of wrath stays out of the macro", world.macros.SigilAttack:find("Hammer of Wrath", 1, true), nil)
+expect("holy strike is still in the macro", world.macros.SigilAttack:find("/cast Holy Strike", 1, true) ~= nil, true)
+expect("no mark on a healthy target", ns.Game.view().usable.how, false)
+world.unusable = {}
+expect("usable on a low target", ns.Game.view().usable.how, true)
 
 for _, line in ipairs(SigilCharDB.log) do
   if line:find("error") then failed = failed + 1; out("LOGGED " .. line) end

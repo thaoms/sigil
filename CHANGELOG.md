@@ -4,6 +4,7 @@
 
 - In a group, a miss on your target no longer takes a stack back. In party play those misses were other players', so Sigil was counting one stack too few and calling the swap a swing late
 - Hammer of Justice is now always manual, with its mark like Consecration. In the Attack macro it kept Holy Strike from going off while the stun was on cooldown, and lower down it never went off itself. The "Hammer of Justice" automatic option is gone
+- Hammer of Wrath is out of the Attack macro too, for the same reason: it only works on a low target and would stop Holy Strike the rest of the fight. It gets its own key and a mark when the game says it can be cast
 
 ## 0.2.0-beta3
 

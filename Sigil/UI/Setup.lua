@@ -55,7 +55,7 @@ local function items()
   local primary, secondary = ns.Engine.pair(ns.Game.knownFlags(), ns.db)
   add(primary); add(secondary)
   if ns.db.opener and ns.db.opener ~= "off" then add("crusader") end
-  add("consecration"); add("hoj"); add("wisdom")
+  add("consecration"); add("hoj"); add("how"); add("wisdom")
   return list
 end
 
@@ -75,6 +75,7 @@ local HELP = {
   crusader = "Opener, once per target.",
   consecration = "For packs of enemies.",
   hoj = "Stun just before Judgement.",
+  how = "When the target is low.",
   wisdom = "When mana is nearly empty.",
 }
 
