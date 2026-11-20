@@ -304,6 +304,17 @@ world.combat = true; fire("PLAYER_REGEN_DISABLED"); tick(1.0)
 expect("cooldown manager button found", ns.Game.cdm.found[200341], "BuffIconCooldownViewer")
 echoItem.auraInstanceID = SECRET; tick(0.6)
 expect("a secret instance id reads as up", ns.Game.readCooldownManager().echo, true)
+local stackFs = widget("FontString"); stackFs.text = SECRET
+echoItem.Applications = setmetatable({ Applications = stackFs }, { __index = function() return nil end })
+expect("a hidden stack number reads as secret", ns.Game.readCooldownManager().echoText, ns.Game.SECRET_TEXT)
+tick(1.0)
+expect("hidden stack number is counted", (ns.Game.cdm.textSecret or 0) > 0, true)
+stackFs.text = tostring(ns.Game.tracker.stacks)
+tick(1.0)
+expect("readable stack number that matches is counted", (ns.Game.cdm.textMatch or 0) > 0, true)
+stackFs.text = "3"; ns.Game.tracker.stacks = 1; tick(1.0)
+expect("readable stack number that differs is counted", (ns.Game.cdm.textMiss or 0) > 0, true)
+echoItem.Applications = nil
 cast(20915); fire("PLAYER_SWING", 3.3, 0); tick(1.2)
 expect("stacks kept while the button shows them", ns.Game.tracker.stacks > 0, true)
 local fixesBefore = ns.Game.cdm.fixes or 0

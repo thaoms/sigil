@@ -556,7 +556,7 @@ local function onSwing(duration, swingType)
   Game.swingAt = now
   Game.stats.swings = (Game.stats.swings or 0) + 1
   Game.log("swing %.2fs -> %s x%d%s", duration or 0, tostring(Game.tracker.stored), Game.tracker.stacks,
-    released and (" released " .. released.seal .. " x" .. released.count) or "")
+    released and (" released " .. tostring(released.seal) .. " x" .. tostring(released.count)) or "")
   if Game.crusaderMark and Game.crusaderMark.id == targetId() and now < Game.crusaderMark.untilTime then
     Game.crusaderMark.untilTime = now + CRUSADER_LASTS
   end
@@ -704,7 +704,7 @@ function Game.start()
     local saved = ns.db.cdm
     if type(saved) == "table" then
       for k, v in pairs(Game.cdm) do if saved[k] == nil then saved[k] = v end end
-      saved.at, saved.lastEcho, saved.echoDownRun, saved.sealDownRun = nil, nil, nil, nil
+      saved.at, saved.lastEcho, saved.echoDownRun, saved.sealDownRun, saved.lastTextLogged, saved.textOtherLogged = nil, nil, nil, nil, nil, nil
       Game.cdm = saved
     else
       ns.db.cdm = Game.cdm
@@ -780,6 +780,47 @@ local CDM_IDS = { [200341] = "echo", [200342] = "echo", [200339] = "seal", [2003
 Game.cdm = { polls = 0, found = {}, echoAgree = 0, echoDown = 0, echoUp = 0, sealAgree = 0, sealDown = 0, sealUp = 0 }
 
 -- Returns { echo = true/false/nil, seal = true/false/nil }; nil means not shown.
+-- The stack number printed on a Cooldown Manager button. Untested whether
+-- the game lets addons read it in combat, so this only reads and reports:
+-- returns the text, or SECRET_TEXT when hidden, or nil when not found.
+-- Only Blizzard's frames are read; nothing is written to them.
+local SECRET_TEXT = {}
+Game.SECRET_TEXT = SECRET_TEXT
+local function readText(fs)
+  if not fs or not fs.GetText then return nil end
+  local ok, text = pcall(fs.GetText, fs)
+  if not ok then return SECRET_TEXT end
+  if issecret(text) then return SECRET_TEXT end
+  return text
+end
+local function stackText(item)
+  for _, path in ipairs({ { "Applications", "Applications" }, { "Applications", "Text" }, { "Count" }, { "ChargeCount", "Current" } }) do
+    local node = item
+    for _, key in ipairs(path) do
+      node = node and rawget(node, key)
+    end
+    if node and node.GetText then
+      local text = readText(node)
+      if text ~= nil then return text, table.concat(path, ".") end
+    end
+  end
+  -- fall back to any font string directly on the button or its Applications frame
+  for _, holder in ipairs({ item, rawget(item, "Applications") }) do
+    if holder and holder.GetRegions then
+      local ok, regions = pcall(function() return { holder:GetRegions() } end)
+      if ok then
+        for _, region in ipairs(regions) do
+          if region.GetObjectType and region:GetObjectType() == "FontString" then
+            local text = readText(region)
+            if text ~= nil then return text, "region" end
+          end
+        end
+      end
+    end
+  end
+  return nil
+end
+
 function Game.readCooldownManager()
   local state = {}
   for _, name in ipairs(CDM_VIEWERS) do
@@ -795,6 +836,10 @@ function Game.readCooldownManager()
             local up = issecret(instance) or instance ~= nil
             Game.cdm.found[id] = name
             if up then state[what] = true elseif state[what] == nil then state[what] = false end
+            if what == "echo" and up then
+              local text, where = stackText(item)
+              if text ~= nil then state.echoText, state.echoTextFrom = text, where end
+            end
           end
         end
       end)
@@ -813,6 +858,32 @@ local function watchCooldownManager(now)
   local t = Game.tracker
   -- give the game a moment to light the button after a change
   local settled = not Game.swingAt or now - Game.swingAt > 0.8
+  -- the stack number test: is the printed count readable, and does it match?
+  if state.echoText ~= nil and settled then
+    c.textFrom = state.echoTextFrom
+    if state.echoText == SECRET_TEXT then
+      c.textSecret = (c.textSecret or 0) + 1
+    else
+      local n = tonumber(state.echoText) or (state.echoText == "" and 1) or nil
+      if n then
+        c.textPlain = (c.textPlain or 0) + 1
+        if n == t.stacks then c.textMatch = (c.textMatch or 0) + 1
+        else
+          c.textMiss = (c.textMiss or 0) + 1
+          if c.lastTextLogged ~= n .. ":" .. t.stacks then
+            c.lastTextLogged = n .. ":" .. t.stacks
+            Game.log("cooldown manager stack number %d, counted x%d", n, t.stacks)
+          end
+        end
+      else
+        c.textOther = (c.textOther or 0) + 1
+        if not c.textOtherLogged then
+          c.textOtherLogged = true
+          Game.log("cooldown manager stack text unexpected: '%s'", tostring(state.echoText))
+        end
+      end
+    end
+  end
   if state.echo ~= nil and settled then
     local mine = t.stacks > 0
     if mine == state.echo then c.echoAgree = c.echoAgree + 1
@@ -971,6 +1042,8 @@ function Game.report()
   add("cooldown manager stacks: agree %d, shows down while counted %d, shows up while none counted %d", c.echoAgree, c.echoDown, c.echoUp)
   add("cooldown manager seal: agree %d, shows down while counted %d, shows up while none counted %d", c.sealAgree, c.sealDown, c.sealUp)
   add("cooldown manager corrections made: %d", c.fixes or 0)
+  add("cooldown manager stack number (%s): readable %d (matched %d, differed %d), hidden %d, other %d",
+    tostring(c.textFrom), c.textPlain or 0, c.textMatch or 0, c.textMiss or 0, c.textSecret or 0, c.textOther or 0)
   local both, single = Game.compareLines()
   for _, line in ipairs(both) do add("kill time %s", line) end
   for _, line in ipairs(single) do add("kill time %s", line) end
