@@ -1,0 +1,186 @@
+-- Run with: luajit tests/run.lua   (from the repo root)
+local ns = {}
+for _, f in ipairs({ "Tracker", "Mana", "Engine" }) do
+  assert(loadfile("Sigil/Core/" .. f .. ".lua"))("Sigil", ns)
+end
+local Tracker, Mana, Engine = ns.Tracker, ns.Mana, ns.Engine
+
+local passed, failed = 0, 0
+local function test(name, fn)
+  local ok, err = pcall(fn)
+  if ok then passed = passed + 1 else failed = failed + 1; print("FAIL " .. name .. "\n     " .. tostring(err)) end
+end
+local function eq(a, b, msg)
+  if a ~= b then error((msg or "") .. " expected " .. tostring(b) .. ", got " .. tostring(a), 2) end
+end
+
+local ALL = { command = true, righteousness = true, wisdom = true, consecration = true, hoj = true }
+local function view(t, extra)
+  local v = t:snapshot(extra.now)
+  v.combat, v.target, v.known = true, true, ALL
+  for k, x in pairs(extra) do v[k] = x end
+  return v
+end
+
+test("weave: full cycle with a 3.3 speed weapon", function()
+  local t = Tracker.new()
+  local S = {}
+  eq(Engine.decide(view(t, { now = 0 }), S).main.id, "command")
+  t:castSeal("command", 0)
+  eq(Engine.decide(view(t, { now = 0.1 }), S).main.id, "attack")
+  t:swing(1.0, 3.3); eq(t.stacks, 1)
+  t:swing(4.3, 3.3); eq(t.stacks, 2)
+  local d = Engine.decide(view(t, { now = 4.4 }), S)
+  eq(d.main.id, "attack"); eq(d.next, "righteousness")
+  t:swing(7.6, 3.3); eq(t.stacks, 3)
+  d = Engine.decide(view(t, { now = 7.7 }), S)
+  eq(d.main.id, "righteousness"); eq(d.main.urgent, true)
+  t:castSeal("righteousness", 8.0)
+  d = Engine.decide(view(t, { now = 8.1 }), S)
+  eq(d.main.id, "attack"); eq(d.main.why, "Your next swing releases the stacks.")
+  local rel = t:swing(10.9, 3.3)
+  eq(rel.seal, "command"); eq(rel.count, 3)
+  eq(t.stored, "righteousness"); eq(t.stacks, 1)
+  eq(Engine.decide(view(t, { now = 11.0 }), S).main.id, "command")
+  t:castSeal("command", 11.2)
+  rel = t:swing(14.2, 3.3)
+  eq(rel.seal, "righteousness"); eq(rel.count, 1)
+  eq(t.stored, "command"); eq(t.stacks, 1)
+  eq(Engine.decide(view(t, { now = 14.3 }), S).main.id, "attack")
+end)
+
+test("a miss reported after the swing is undone", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0)
+  t:swing(1, 3.3); t:swing(4.3, 3.3)
+  eq(t.stacks, 2)
+  t:swing(7.6, 3.3); eq(t.stacks, 3)
+  eq(t:swingMissed(8.0), true); eq(t.stacks, 2)
+  eq(Engine.decide(view(t, { now = 8.1 }), {}).main.id, "attack")
+  eq(t:swingMissed(8.2), false, "second undo")
+end)
+
+test("a missed release keeps the stacks", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0)
+  t:swing(1, 3.3); t:swing(4.3, 3.3); t:swing(7.6, 3.3)
+  t:castSeal("righteousness", 8)
+  t:swing(10.9, 3.3); t:swingMissed(11.3)
+  eq(t.stored, "command"); eq(t.stacks, 3)
+  eq(Engine.decide(view(t, { now = 11.4 }), {}).main.id, "attack")
+end)
+
+test("stacks and seal expire", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0); t:swing(1, 3.3)
+  eq(t:snapshot(15.9).stacks, 1)
+  eq(t:snapshot(16.1).stacks, 0)
+  eq(t:snapshot(29).seal, "command")
+  eq(t:snapshot(30.1).seal, nil)
+  eq(Engine.decide(view(t, { now = 30.2 }), {}).main.id, "command")
+end)
+
+test("seal about to run out is refreshed", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0)
+  eq(Engine.decide(view(t, { now = 28.5 }), {}).main.id, "command")
+  eq(Engine.decide(view(t, { now = 20 }), {}).main.id, "attack")
+end)
+
+test("low mana: no swap, no consecration", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0)
+  t:swing(1, 3.3); t:swing(4.3, 3.3); t:swing(7.6, 3.3)
+  local d = Engine.decide(view(t, { now = 7.7, manaLevel = 2, enemies = 4, ready = { consecration = true } }), {})
+  eq(d.main.id, "attack"); eq(#d.side, 0)
+  t:castSeal("righteousness", 8)
+  eq(Engine.decide(view(t, { now = 8.1, manaLevel = 2 }), {}).main.id, "command")
+end)
+
+test("nearly empty: seal of wisdom, then back", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0)
+  eq(Engine.decide(view(t, { now = 1, manaLevel = 1 }), {}).main.id, "wisdom")
+  t:castSeal("wisdom", 1.5)
+  local d = Engine.decide(view(t, { now = 2, manaLevel = 1 }), {})
+  eq(d.main.id, "attack"); eq(d.main.why, "Recovering mana.")
+  eq(Engine.decide(view(t, { now = 3, manaLevel = 2 }), {}).main.id, "attack")
+  eq(Engine.decide(view(t, { now = 4, manaLevel = 3 }), {}).main.id, "command")
+  eq(Engine.decide(view(t, { now = 1, manaLevel = 1 }), { recover = "blessing" }).marks.blessingOfWisdom, true)
+end)
+
+test("cannot afford the seal: keep attacking", function()
+  local t = Tracker.new()
+  local d = Engine.decide(view(t, { now = 0, afford = { command = false } }), {})
+  eq(d.main.id, "attack"); eq(d.broke, true)
+end)
+
+test("a seal the player picked on purpose is left alone", function()
+  local t = Tracker.new()
+  t:castSeal("justice", 0)
+  eq(Engine.decide(view(t, { now = 1 }), {}).main.id, "attack")
+end)
+
+test("without Seal of Command: one seal, no weave", function()
+  local t = Tracker.new()
+  local known = { righteousness = true }
+  eq(Engine.decide(view(t, { now = 0, known = known }), {}).main.id, "righteousness")
+  t:castSeal("righteousness", 0)
+  t:swing(1, 3.3); t:swing(4.3, 3.3); t:swing(7.6, 3.3)
+  eq(Engine.decide(view(t, { now = 8, known = known }), {}).main.id, "attack")
+end)
+
+test("consecration and hammer of justice cues", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0)
+  local r = { consecration = true, hoj = true }
+  eq(#Engine.decide(view(t, { now = 1, enemies = 1, ready = r, judgementRemains = 6 }), {}).side, 0)
+  eq(Engine.decide(view(t, { now = 1, enemies = 3, ready = r, judgementRemains = 6 }), {}).side[1], "consecration")
+  eq(Engine.decide(view(t, { now = 1, enemies = 1, ready = r, judgementRemains = 6 }), { consecration = "always" }).side[1], "consecration")
+  eq(#Engine.decide(view(t, { now = 1, enemies = 5, ready = r, judgementRemains = 6 }), { consecration = "never" }).side, 0)
+  eq(Engine.decide(view(t, { now = 1, ready = r, judgementRemains = 2 }), {}).side[1], "hoj")
+  eq(#Engine.decide(view(t, { now = 1, ready = r, judgementRemains = 2 }), { hojCue = false }).side, 0)
+end)
+
+test("out of combat with no target: idle, drink mark when low", function()
+  local t = Tracker.new()
+  local d = Engine.decide({ known = ALL, manaLevel = 2, auraMissing = true }, {})
+  eq(d.main.id, "idle"); eq(d.marks.drink, true); eq(d.marks.aura, true)
+end)
+
+test("cooldown tracking and correction", function()
+  local t = Tracker.new()
+  t:setCooldown("judgement", 8)
+  t:castSpell("judgement", 10, true)
+  eq(t:remains("judgement", 12), 6)
+  eq(t:snapshot(10.1).gcdRemains, 0)
+  t:correctCooldown("judgement", true, 12)
+  eq(t:remains("judgement", 12), 0)
+  t:castSpell("holy_strike", 20)
+  eq(t:snapshot(20.5).gcdRemains, 1)
+end)
+
+test("out-of-combat sync adopts the real buffs", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0); t:swing(1, 3.3)
+  t:sync({ seal = false, stacks = 0 }, 5)
+  local s = t:snapshot(5)
+  eq(s.seal, nil); eq(s.stacks, 0)
+  t:sync({ seal = "righteousness", sealExpires = 20, stacks = 2, stored = "righteousness" }, 6)
+  s = t:snapshot(6)
+  eq(s.seal, "righteousness"); eq(s.stacks, 2); eq(s.sealRemains, 14)
+end)
+
+test("mana level from affordability probes", function()
+  local costs = { weave = 250, attack = 60 }
+  local function P(list) local o = {} for c, a in pairs(list) do o[#o + 1] = { cost = c, affordable = a } end return o end
+  eq(Mana.level(P({ [100] = true, [300] = true, [465] = true }), costs), 3)
+  eq(Mana.level(P({ [100] = true, [300] = true, [465] = false }), costs), 2)
+  eq(Mana.level(P({ [100] = true, [300] = false, [465] = false }), costs), 1)
+  eq(Mana.level(P({ [100] = true, [300] = true, [465] = false }), costs, 1), 1, "hysteresis")
+  eq(Mana.level(P({ [100] = true, [300] = true, [465] = true }), costs, 1), 3)
+  eq(Mana.level({}, costs), 3)
+end)
+
+print(("%d passed, %d failed"):format(passed, failed))
+os.exit(failed == 0 and 0 or 1)
