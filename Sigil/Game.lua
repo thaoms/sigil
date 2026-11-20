@@ -397,6 +397,8 @@ function Game.syncBuffs()
     t:expire(now)
     local stats = Game.stats
     stats.compared = (stats.compared or 0) + 1
+    Game.log("after fight: counted %s x%d, real %s x%d, seal counted %s real %s", tostring(t.stored), t.stacks,
+      tostring(real.stored), real.stacks, tostring(t.seal), tostring(real.seal))
     if t.stacks ~= real.stacks or (real.stacks > 0 and t.stored ~= real.stored) then
       stats.drifted = (stats.drifted or 0) + 1
       Game.log("drift: counted %s x%d, real %s x%d", tostring(t.stored), t.stacks, tostring(real.stored), real.stacks)
@@ -632,7 +634,7 @@ local function calibrate(now)
     local ready = Game.ready(key)
     if ready then
       local took = now - at
-      if took > 2.5 and took < 120 and math.abs(took - (Game.tracker.cooldowns[key] or 0)) > 0.4 then
+      if took > 2.5 and took < 120 and math.abs(took - (Game.tracker.cooldowns[key] or 0)) > 0.75 then
         local rounded = math.floor(took * 2 + 0.5) / 2
         Game.log("cooldown %s measured %.1f", key, took)
         if took < (Game.tracker.cooldowns[key] or 999) + 3 then Game.tracker:setCooldown(key, rounded) end
