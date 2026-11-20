@@ -31,6 +31,12 @@ tools/install.sh
 
 Copies `Sigil/` into `_forever_/Interface/AddOns`. Restart the game the first time; after updates, `/reload` is enough.
 
+It finds the game in `/Applications` on macOS, or in `World of Warcraft`, `Program Files (x86)`, `Program Files` or `Games` on drives C to G on Windows. On Windows, run it from Git Bash or WSL. If your game is somewhere else, pass the AddOns folder:
+
+```sh
+tools/install.sh "D:\Games\World of Warcraft\_forever_\Interface\AddOns"
+```
+
 ## In game
 
 A setup window opens on first login. It creates the Attack macro, lists Sigil's buttons with the key each is on, and can place missing ones into empty bar slots. It never replaces a button.
