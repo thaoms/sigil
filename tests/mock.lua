@@ -341,6 +341,12 @@ expect("without the game's count the arcs come back", ns.Halo.frame.stacks[1].al
 cast(20915); tick(0.2)
 world.combat = false; fire("PLAYER_REGEN_ENABLED"); tick(0.2)
 
+-- dying clears the seal and stacks
+ns.Game.tracker:castSeal("command", clock); ns.Game.tracker.stacks, ns.Game.tracker.stored = 2, "command"
+fire("PLAYER_DEAD"); tick(0.1)
+expect("death clears the seal", ns.Game.tracker.seal, nil)
+expect("death clears the stacks", ns.Game.tracker.stacks, 0)
+
 -- commands
 SlashCmdList.SIGIL("check")
 expect("report saved", type(SigilDB.report.lines), "table")

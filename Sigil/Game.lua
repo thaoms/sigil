@@ -686,6 +686,15 @@ function handlers.PLAYER_TARGET_CHANGED()
   if Game.crusaderMark and Game.crusaderMark.id == "target" then Game.crusaderMark = nil end
 end
 
+-- Dying removes your seal and every stored copy.
+function handlers.PLAYER_DEAD()
+  local t = Game.tracker
+  t.seal, t.sealExpires = nil, nil
+  t.stacks, t.stored, t.stacksExpire, t.undo = 0, nil, nil, nil
+  Game.crusaderMark = nil
+  Game.log("died: seal and stacks cleared")
+end
+
 function handlers.NAME_PLATE_UNIT_ADDED(unit)
   unit = plain(unit)
   if unit then plates[unit] = true end
