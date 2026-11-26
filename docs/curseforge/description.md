@@ -1,6 +1,6 @@
 Sigil tells a Retribution Paladin which seal to press and when. It never presses anything for you.
 
-This is a beta. I built it for my own paladin and it works well for me solo, but dungeons and raids are untested.
+I built it for my own paladin. It works well for me solo and in parties; dungeons and raids are untested.
 
 ## What you get
 
