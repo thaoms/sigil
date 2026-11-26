@@ -545,6 +545,7 @@ function Game.crusaderDone(now)
 end
 
 local MISSES = { MISS = true, DODGE = true, PARRY = true }
+local CONSECRATION_MISSES = 2   -- seconds after a Consecration cast when a miss is taken as its own
 
 -- A Seal of Command extra hit while another seal is up can only come from
 -- stored Command copies released by the swing that just landed. If Sigil
@@ -637,8 +638,13 @@ local function onUnitCombat(unit, action)
   -- are mostly other players': in party play every swing undone this way had
   -- in fact landed. So in a group misses change nothing; the Cooldown Manager
   -- and the game-drawn arcs still show the real stacks.
+  -- Consecration's hits can miss too, and live one landed a second after
+  -- the cast, right in a swing's window, and took back a stack that was real.
+  local sinceConsecration = Game.castAt and Game.castAt.consecration and (now - Game.castAt.consecration)
   if plain(try(IsInGroup)) == true then
     verdict = "in a group, not counted"
+  elseif sinceConsecration and sinceConsecration <= CONSECRATION_MISSES then
+    verdict = ("%.2fs after Consecration, likely its hit, not counted"):format(sinceConsecration)
   elseif sinceAbility >= 0 and sinceAbility < 0.25 then
     verdict = "ability"
   elseif sinceSwing < 0.25 then

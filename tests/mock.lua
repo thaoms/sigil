@@ -229,6 +229,14 @@ expect("a later parry undoes the swing", ns.Game.tracker.stored, "righteousness"
 expect("miss counted", ns.Game.stats.misses, 1)
 fire("UNIT_COMBAT", "target", "MISS", "", 0, 1); tick(0.1)
 expect("one swing is only undone once", ns.Game.stats.misses, 1)
+cast(26573, 8); tick(0.3)
+fire("PLAYER_SWING", 3.3, 0); tick(0.7)
+local storedC, stacksC = ns.Game.tracker.stored, ns.Game.tracker.stacks
+fire("UNIT_COMBAT", "target", "MISS", "", 0, 1); tick(0.1)
+expect("a miss just after Consecration is not counted", ns.Game.stats.misses, 1)
+expect("the swing after Consecration is kept", ns.Game.tracker.stacks, stacksC)
+expect("and its seal", ns.Game.tracker.stored, storedC)
+tick(2)
 world.inGroup = true
 fire("PLAYER_SWING", 3.3, 0); tick(0.5)
 local missesBefore = ns.Game.stats.misses

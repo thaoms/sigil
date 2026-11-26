@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- A miss on your target up to 2 seconds after you cast Consecration no longer takes a stack back. Consecration's own hits can miss, and live one landed in a swing's window and undid a swing that had landed
+
 ## 0.2.0-beta4
 
 - In a group, a miss on your target no longer takes a stack back. In party play those misses were other players', so Sigil was counting one stack too few and calling the swap a swing late
