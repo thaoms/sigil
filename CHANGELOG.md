@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0
+## 0.2.1
 
 - A miss on your target up to 2 seconds after you cast Consecration no longer takes a stack back. Consecration's own hits can miss, and live one landed in a swing's window and undid a swing that had landed
 

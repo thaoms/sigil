@@ -4,7 +4,7 @@ A next-ability helper for Retribution Paladins in World of Warcraft: Forever.
 
 Sigil shows which seal to press and when, your Unsealed Wrath stacks, your swing timer and your mana, all in one halo. It never presses anything for you.
 
-Version 0.2.0, for WoW Forever 1.60.1 (`## Interface: 16001`).
+Version 0.2.1, for WoW Forever 1.60.1 (`## Interface: 16001`).
 
 | A seal is called | The opener | Out of combat |
 |---|---|---|
