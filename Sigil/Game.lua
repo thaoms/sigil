@@ -215,6 +215,26 @@ function Game.gatedUsable(key, liveTarget)
 end
 function Game.howUsable(liveTarget) return Game.gatedUsable("how", liveTarget) end
 
+-- Exorcism: the target's creature type decides (3 Demon, 6 Undead), as the
+-- Paladin Toolkit does. Live, waiting for the game to refuse it first never
+-- happened in an undead-only zone. The "usable" gate is the fallback when
+-- the type can't be read.
+local EXORCISABLE = { [3] = true, [6] = true }
+function Game.exorcismUsable(liveTarget)
+  if not liveTarget then return nil end
+  local _, id = try(UnitCreatureType, "target")
+  id = plain(id)
+  if type(id) == "number" then
+    if not EXORCISABLE[id] then return false end
+    return Game.usable("exorcism") ~= false
+  end
+  if not Game.creatureUnreadLogged then
+    Game.creatureUnreadLogged = true
+    Game.log("exorcism: target creature type unreadable, falling back to the game's usable answer")
+  end
+  return Game.gatedUsable("exorcism", liveTarget)
+end
+
 -- true when off cooldown (the global cooldown doesn't count), nil when unknown
 function Game.ready(key)
   local id = Game.known[key]
@@ -987,7 +1007,8 @@ function Game.view()
   Game.lastUsable = Game.lastUsable or {}
   for _, key in ipairs({ "how", "exorcism" }) do
     if v.known[key] then
-      v.usable[key] = Game.gatedUsable(key, v.target)
+      if key == "exorcism" then v.usable[key] = Game.exorcismUsable(v.target)
+      else v.usable[key] = Game.gatedUsable(key, v.target) end
       if v.combat and v.usable[key] ~= Game.lastUsable[key] then
         Game.lastUsable[key] = v.usable[key]
         Game.log("%s usable %s", key == "how" and "hammer of wrath" or key, tostring(v.usable[key]))

@@ -83,7 +83,7 @@ function UnitIsDead() return false end
 function UnitAffectingCombat() return world.combat end
 function UnitPower() return SECRET end
 function UnitPowerMax() return 2162 end
-function UnitCreatureType() return "Beast", 1 end
+function UnitCreatureType() local c = world.creature or { "Beast", 1 } return c[1], c[2] end
 function IsInGroup() return world.inGroup end
 function InCombatLockdown() return world.combat end
 function GetShapeshiftForm() return world.form end
@@ -479,12 +479,18 @@ world.unusable = {}
 
 -- Exorcism: out of the macro, marked only on undead and demons
 expect("exorcism stays out of the macro", world.macros.SigilAttack:find("Exorcism", 1, true), nil)
-expect("exorcism not trusted before the game has said no once", ns.Game.view().usable.exorcism, nil)
-world.unusable = { [879] = true }
+world.creature = { "Beast", 1 }
 expect("no exorcism on a beast", ns.Game.view().usable.exorcism, false)
-expect("the exorcism gate is remembered", ns.db.exorcismGate, true)
+world.creature = { "Undead", 6 }
+expect("exorcism on undead, without waiting for a refusal first", ns.Game.view().usable.exorcism, true)
+world.creature = { "Demon", 3 }
+expect("exorcism on a demon", ns.Game.view().usable.exorcism, true)
+world.creature = { "Undead", 6 }; world.cooling[29515] = nil; world.unusable = { [879] = true }
+expect("not when the game says it can't be cast", ns.Game.view().usable.exorcism, false)
 world.unusable = {}
-expect("exorcism usable on undead", ns.Game.view().usable.exorcism, true)
+world.creature = { nil, nil }
+expect("unreadable type falls back to the gate (none seen yet)", ns.Game.view().usable.exorcism, nil)
+world.creature = nil
 
 for _, line in ipairs(SigilCharDB.log) do
   if line:find("error") then failed = failed + 1; out("LOGGED " .. line) end
