@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.2
 
 - Exorcism is out of the Attack macro and gets its own key and a mark on undead and demons, judged by the target's creature type. Below Holy Strike in the macro it never went off: Holy Strike either fires or, on cooldown, stops the press
 - Hammer of Wrath seen working live: the mark shows when the target is low enough

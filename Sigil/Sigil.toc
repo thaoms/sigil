@@ -2,7 +2,7 @@
 ## Title: Sigil
 ## Notes: Shows a Retribution Paladin which seal to press and when. It never presses anything for you.
 ## Author: Narsil
-## Version: 0.2.1
+## Version: 0.2.2
 ## Category: Combat
 ## X-License: All Rights Reserved
 ## X-Curse-Project-ID: 1818785
