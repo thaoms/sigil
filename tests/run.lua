@@ -247,6 +247,20 @@ test("hammer of wrath mark only when the game says it can be cast", function()
   eq(#side({ usable = { how = true }, ready = { how = true }, afford = { how = false } }), 0, "no mana")
 end)
 
+test("exorcism mark only when the game says it can be cast", function()
+  local t = Tracker.new()
+  t:castSeal("command", 0)
+  local known = { command = true, righteousness = true, exorcism = true }
+  local function side(extra, s)
+    extra.now, extra.known, extra.judgementRemains = 1, known, 6
+    return Engine.decide(view(t, extra), s or {}).side
+  end
+  eq(side({ usable = { exorcism = true }, ready = { exorcism = true } })[1], "exorcism", "undead: marked")
+  eq(#side({ usable = { exorcism = false }, ready = { exorcism = true } }), 0, "beast: no mark")
+  eq(#side({ usable = { exorcism = true }, ready = { exorcism = false } }), 0, "on cooldown: no mark")
+  eq(#side({ usable = { exorcism = true }, ready = { exorcism = true } }, { exorcismCue = false }), 0, "turned off")
+end)
+
 test("out of combat with no target: idle, drink mark when low", function()
   local t = Tracker.new()
   local d = Engine.decide({ known = ALL, manaLevel = 2, auraMissing = true }, {})

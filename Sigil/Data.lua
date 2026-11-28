@@ -47,14 +47,14 @@ end
 
 Data.label = {
   attack = "Attack", command = "Seal of Command", righteousness = "Seal of Righteousness",
-  wisdom = "Seal of Wisdom", consecration = "Consecration", hoj = "Hammer of Justice", how = "Hammer of Wrath",
+  wisdom = "Seal of Wisdom", consecration = "Consecration", hoj = "Hammer of Justice", how = "Hammer of Wrath", exorcism = "Exorcism",
   judgement = "Judgement", holy_strike = "Holy Strike", idle = "",
   crusader = "Seal of the Crusader", light = "Seal of Light", justice = "Seal of Justice",
   ret_aura = "Retribution Aura", devo_aura = "Devotion Aura", conc_aura = "Concentration Aura",
 }
 Data.glyph = {
   attack = "glyph_attack", command = "glyph_command", righteousness = "glyph_righteousness",
-  wisdom = "glyph_wisdom", consecration = "glyph_consecration", hoj = "glyph_hoj", how = "glyph_hoj",
+  wisdom = "glyph_wisdom", consecration = "glyph_consecration", hoj = "glyph_hoj", how = "glyph_hoj", exorcism = "glyph_seal",
   judgement = "glyph_attack", holy_strike = "glyph_attack", idle = "glyph_attack",
   light = "glyph_seal", justice = "glyph_seal", fury = "glyph_seal", crusader = "glyph_seal",
 }
@@ -62,7 +62,7 @@ Data.color = {
   attack = { 0.91, 0.73, 0.34 }, idle = { 0.55, 0.58, 0.64 },
   command = { 1.00, 0.42, 0.35 }, righteousness = { 1.00, 0.70, 0.28 },
   wisdom = { 0.53, 0.71, 1.00 }, consecration = { 1.00, 0.84, 0.43 },
-  hoj = { 0.53, 0.71, 1.00 }, how = { 1.00, 0.42, 0.35 }, gold = { 0.91, 0.73, 0.34 },
+  hoj = { 0.53, 0.71, 1.00 }, how = { 1.00, 0.42, 0.35 }, exorcism = { 1.00, 0.84, 0.43 }, gold = { 0.91, 0.73, 0.34 },
   ink = { 0.93, 0.90, 0.84 }, dim = { 0.55, 0.58, 0.64 }, warn = { 1.00, 0.70, 0.28 },
   light = { 0.93, 0.90, 0.84 }, justice = { 0.93, 0.90, 0.84 }, fury = { 0.93, 0.90, 0.84 }, crusader = { 0.93, 0.90, 0.84 },
 }
@@ -70,7 +70,7 @@ Data.manaColor = { { 1.00, 0.42, 0.35 }, { 1.00, 0.70, 0.28 }, { 0.53, 0.71, 1.0
 
 Data.defaults = {
   scale = 1, locked = false, showWhy = true, onlyCombat = false,
-  consecration = "aoe", recover = "seal", upkeep = true, hojCue = true, howCue = true,
+  consecration = "aoe", recover = "seal", upkeep = true, hojCue = true, howCue = true, exorcismCue = true,
   cue = "ready", attackKeys = 1, primary = "auto", secondary = "auto", opener = "off", aura = "any", pattern = "even", minimap = true, debug = false, realStacks = true, minimapAngle = 215, hideErrors = false, weave = true,
 }
 

@@ -198,15 +198,22 @@ end
 -- so. Sigil trusts that only after seeing it say "no" once on a live
 -- target: otherwise a client that always says "yes" would light the mark
 -- all fight. Remembered per character. (As the Paladin Toolkit does.)
-function Game.howUsable(liveTarget)
-  local usable = Game.usable("how")
-  if usable == false and liveTarget and not ns.db.howGate then
-    ns.db.howGate = true
-    Game.log("hammer of wrath: the game says not usable on a healthy target, so usable means low enough")
+-- Exorcism works the same way: only on undead and demons.
+local GATES = {
+  how = { field = "howGate", note = "hammer of wrath: the game says not usable on a healthy target, so usable means low enough" },
+  exorcism = { field = "exorcismGate", note = "exorcism: the game says not usable on this target, so usable means undead or demon" },
+}
+function Game.gatedUsable(key, liveTarget)
+  local gate = GATES[key]
+  local usable = Game.usable(key)
+  if usable == false and liveTarget and not ns.db[gate.field] then
+    ns.db[gate.field] = true
+    Game.log(gate.note)
   end
-  if not ns.db.howGate then return nil end
+  if not ns.db[gate.field] then return nil end
   return usable
 end
+function Game.howUsable(liveTarget) return Game.gatedUsable("how", liveTarget) end
 
 -- true when off cooldown (the global cooldown doesn't count), nil when unknown
 function Game.ready(key)
@@ -283,8 +290,11 @@ function Game.macroBody()
   -- can't be cast. Live, Hammer of Justice on cooldown kept Holy Strike from
   -- firing. So only spells that are reliably castable go here: Judgement
   -- (off the global cooldown), Holy Strike, and Exorcism last. Hammer of
-  -- Justice and Hammer of Wrath (low targets only) are manual keys with marks.
-  local order = { "judgement", "holy_strike", "exorcism" }
+  -- Justice, Hammer of Wrath (low targets only) and Exorcism (undead and
+  -- demons only) are manual keys with marks. Exorcism below Holy Strike
+  -- never went off live: Holy Strike either fires or, on cooldown, stops the
+  -- press.
+  local order = { "judgement", "holy_strike" }
   for _, key in ipairs(order) do
     if Game.known[key] then
       local name = plain(try(C_Spell.GetSpellName, Game.known[key]))
@@ -942,7 +952,7 @@ local function watchCooldownManager(now)
   end
 end
 
-local FLAG_KEYS = { "command", "righteousness", "wisdom", "light", "justice", "crusader", "consecration", "hoj", "how" }
+local FLAG_KEYS = { "command", "righteousness", "wisdom", "light", "justice", "crusader", "consecration", "hoj", "how", "exorcism" }
 function Game.knownFlags()
   local flags = {}
   for _, key in ipairs(FLAG_KEYS) do flags[key] = Game.known[key] ~= nil end
@@ -971,12 +981,18 @@ function Game.view()
   v.crusaderDone = Game.crusaderDone(now)
   local class = plain(try(UnitClassification, "target"))
   v.elite = class == "elite" or class == "rareelite" or class == "worldboss"
-  v.ready = { consecration = Game.ready("consecration") == true, hoj = Game.ready("hoj") == true, how = Game.ready("how") }
+  v.ready = { consecration = Game.ready("consecration") == true, hoj = Game.ready("hoj") == true, how = Game.ready("how"),
+    exorcism = Game.ready("exorcism") }
   v.usable = {}
-  if v.known.how then v.usable.how = Game.howUsable(v.target) end
-  if v.known.how and v.combat and v.usable.how ~= Game.lastHowUsable then
-    Game.lastHowUsable = v.usable.how
-    Game.log("hammer of wrath usable %s", tostring(v.usable.how))
+  Game.lastUsable = Game.lastUsable or {}
+  for _, key in ipairs({ "how", "exorcism" }) do
+    if v.known[key] then
+      v.usable[key] = Game.gatedUsable(key, v.target)
+      if v.combat and v.usable[key] ~= Game.lastUsable[key] then
+        Game.lastUsable[key] = v.usable[key]
+        Game.log("%s usable %s", key == "how" and "hammer of wrath" or key, tostring(v.usable[key]))
+      end
+    end
   end
   local judgementReady = Game.ready("judgement")
   v.judgementRemains = judgementReady and 0 or t:remains("judgement", now)

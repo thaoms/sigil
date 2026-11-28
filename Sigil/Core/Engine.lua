@@ -176,6 +176,11 @@ function Engine.decide(view, settings)
       and (view.ready and view.ready.how) ~= false and afford.how ~= false then
       out.side[#out.side + 1] = "how"
     end
+    -- Exorcism only works on undead and demons; same reason, same mark.
+    if settings.exorcismCue ~= false and known.exorcism and view.usable and view.usable.exorcism == true
+      and (view.ready and view.ready.exorcism) ~= false and afford.exorcism ~= false then
+      out.side[#out.side + 1] = "exorcism"
+    end
     local cons = settings.consecration or "aoe"
     local bigPull = (view.enemies or 0) >= 3
     -- On a big pull Consecration stays until mana is nearly empty; otherwise

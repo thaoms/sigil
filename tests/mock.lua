@@ -179,7 +179,7 @@ SigilCharDB.log = {}; ns.db.debug = true
 ns.db.pattern = "burst"      -- the fight below plays the 3-and-1 pattern
 expect("start error", SigilDB.startError, nil)
 expect("there is no stun setting", ns.db.stun, nil)
-expect("macro created", world.macros.SigilAttack, "#showtooltip Holy Strike\n/startattack\n/cast Judgement\n/cast Holy Strike\n/cast Exorcism")
+expect("macro created", world.macros.SigilAttack, "#showtooltip Holy Strike\n/startattack\n/cast Judgement\n/cast Holy Strike")
 expect("holy strike resolves to highest known rank", ns.Game.known.holy_strike, 1866)
 expect("unsealed wrath assumed", ns.Game.unsealedWrathHow, "assumed")
 expect("setup window opened", SigilSetup ~= nil and SigilSetup.shown, true)
@@ -476,6 +476,15 @@ expect("a reading during the global cooldown is ignored", ns.Game.view().usable.
 world.cooling[29515] = nil
 expect("read again after it", ns.Game.view().usable.how, false)
 world.unusable = {}
+
+-- Exorcism: out of the macro, marked only on undead and demons
+expect("exorcism stays out of the macro", world.macros.SigilAttack:find("Exorcism", 1, true), nil)
+expect("exorcism not trusted before the game has said no once", ns.Game.view().usable.exorcism, nil)
+world.unusable = { [879] = true }
+expect("no exorcism on a beast", ns.Game.view().usable.exorcism, false)
+expect("the exorcism gate is remembered", ns.db.exorcismGate, true)
+world.unusable = {}
+expect("exorcism usable on undead", ns.Game.view().usable.exorcism, true)
 
 for _, line in ipairs(SigilCharDB.log) do
   if line:find("error") then failed = failed + 1; out("LOGGED " .. line) end

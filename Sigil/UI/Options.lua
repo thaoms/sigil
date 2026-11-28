@@ -33,6 +33,7 @@ local ROWS = {
   { "cycle", "aura", "Aura to keep up", "Warns if it's off or wrong." },
   { "check", "hojCue", "Hammer of Justice mark", "Shown just before Judgement is ready." },
   { "check", "howCue", "Hammer of Wrath mark", "Shown when the target is low enough." },
+  { "check", "exorcismCue", "Exorcism mark", "Shown on undead and demons." },
   { "cycle", "cue", "Swap sound", "Click to hear each one." },
   { "check", "minimap", "Minimap button", "Left-click opens this window." },
   { "check", "realStacks", "Use the game's stack count", "Exact in combat. Turn off to see Sigil's own count." },
